@@ -2,7 +2,7 @@
 const firebaseConfig = {
     apiKey: "AIzaSyCMY1H6-QLhtUfo6J42Al3DkfAkd1b6qcE",
     authDomain: "aurio-music-app.firebaseapp.com",
-    databaseURL: "https://aurio-music-app-default-rtdb.firebaseio.com", // ← CRITICAL: ADD THIS
+    databaseURL: "https://aurio-music-app-default-rtdb.asia-southeast1.firebasedatabase.app", // ← CRITICAL: ADD THIS
     projectId: "aurio-music-app",
     storageBucket: "aurio-music-app.firebasestorage.app",
     messagingSenderId: "849403275884",
