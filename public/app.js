@@ -29,10 +29,25 @@ let isPlaying = false;
 
 // Initialize App
 function init() {
+    // Handle redirect result first (for mobile OAuth)
+    auth.getRedirectResult()
+        .then(result => {
+            if (result.user) {
+                console.log('✅ Signed in via redirect:', result.user.email);
+            }
+        })
+        .catch(error => {
+            console.error('Redirect error:', error);
+            if (error.code !== 'auth/popup-closed-by-user') {
+                showError(`Authentication error: ${error.message}`);
+            }
+        });
+
     // Auth state listener
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
+            console.log('✅ User signed in:', user.email);
             showApp();
             loadSongs();
         } else {
@@ -61,11 +76,31 @@ function init() {
 // Authentication
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-        .catch(error => {
-            console.error('Sign in error:', error);
-            alert('Sign in failed. Please try again.');
-        });
+    provider.setCustomParameters({
+        prompt: 'select_account'
+    });
+    
+    // Detect mobile
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // Mobile: use redirect (more reliable)
+        console.log('Using redirect sign-in for mobile...');
+        auth.signInWithRedirect(provider);
+    } else {
+        // Desktop: use popup
+        console.log('Using popup sign-in for desktop...');
+        auth.signInWithPopup(provider)
+            .catch(error => {
+                console.error('Popup sign in failed:', error);
+                if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                    console.log('Popup blocked/cancelled, trying redirect...');
+                    auth.signInWithRedirect(provider);
+                } else if (error.code !== 'auth/popup-closed-by-user') {
+                    showError(`Sign in failed: ${error.message}`);
+                }
+            });
+    }
 }
 
 function signOut() {
@@ -74,6 +109,7 @@ function signOut() {
             pauseAudio();
             songs = [];
             currentSongIndex = -1;
+            console.log('✅ Signed out');
         })
         .catch(error => {
             console.error('Sign out error:', error);
@@ -91,6 +127,18 @@ function showApp() {
     appScreen.classList.add('active');
     userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/40';
     userAvatar.alt = currentUser.displayName || 'User';
+}
+
+function showError(message) {
+    const existingError = document.querySelector('.error-toast');
+    if (existingError) existingError.remove();
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-toast';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => errorDiv.remove(), 5000);
 }
 
 // Load Songs from Firebase
@@ -124,7 +172,7 @@ function renderSongs() {
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
                 <p>No songs available yet</p>
-                <p class="subtitle">Check back soon!</p>
+                <p class="subtitle">Add songs from admin panel</p>
             </div>
         `;
         return;
@@ -132,10 +180,10 @@ function renderSongs() {
     
     songList.innerHTML = songs.map((song, index) => `
         <div class="song-item" data-index="${index}">
-            <img src="${song.coverUrl || 'https://via.placeholder.com/60'}" alt="${song.title}" class="song-cover">
+            <img src="${song.coverUrl || 'https://via.placeholder.com/60'}" alt="${song.title}" class="song-cover" onerror="this.src='https://via.placeholder.com/60?text=♪'">
             <div class="song-info">
-                <div class="song-title">${song.title}</div>
-                <div class="song-artist">${song.artist}</div>
+                <div class="song-title">${escapeHtml(song.title)}</div>
+                <div class="song-artist">${escapeHtml(song.artist)}</div>
             </div>
             <button class="play-song-btn" data-index="${index}">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -172,7 +220,7 @@ function playSong(index) {
         })
         .catch(error => {
             console.error('Playback error:', error);
-            alert('Failed to play song. Please try another.');
+            showError('Failed to play song. Audio file may be unavailable.');
         });
 }
 
@@ -187,7 +235,10 @@ function togglePlayPause() {
                 isPlaying = true;
                 updatePlayerUI();
             })
-            .catch(error => console.error('Play error:', error));
+            .catch(error => {
+                console.error('Play error:', error);
+                showError('Playback failed');
+            });
     }
 }
 
@@ -214,6 +265,7 @@ function updatePlayerUI() {
     if (currentSongIndex >= 0 && currentSongIndex < songs.length) {
         const song = songs[currentSongIndex];
         playerCover.src = song.coverUrl || 'https://via.placeholder.com/60';
+        playerCover.onerror = () => playerCover.src = 'https://via.placeholder.com/60?text=♪';
         playerTitle.textContent = song.title;
         playerArtist.textContent = song.artist;
     }
@@ -261,7 +313,7 @@ function formatTime(seconds) {
 
 function handleAudioError(e) {
     console.error('Audio error:', e);
-    alert('Error playing audio. The file may be unavailable.');
+    showError('Error playing audio. File may be unavailable.');
     isPlaying = false;
     updatePlayerUI();
 }
@@ -271,6 +323,13 @@ function incrementPlayCount(songId) {
     if (!songId) return;
     const playCountRef = database.ref(`songs/${songId}/playCount`);
     playCountRef.transaction(count => (count || 0) + 1);
+}
+
+// Security: Escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Initialize on load
