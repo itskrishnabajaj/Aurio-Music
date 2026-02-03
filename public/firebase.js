@@ -1,4 +1,6 @@
-// Firebase Configuration
+// TEST firebase.js - Replace your current one
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCMY1H6-QLhtUfo6J42Al3DkfAkd1b6qcE",
@@ -9,25 +11,10 @@ const firebaseConfig = {
   appId: "1:849403275884:web:79a001b4cc1837c2260649"
 };
 
-// Initialize Firebase
-try {
-    firebase.initializeApp(firebaseConfig);
-    console.log('✅ Firebase initialized successfully');
-} catch (error) {
-    console.error('❌ Firebase initialization error:', error);
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-// Firebase services
-const auth = firebase.auth();
-const database = firebase.database();
+console.log('Firebase loaded:', app.name);
 
-// Admin emails whitelist (add your admin Google emails here)
-const ADMIN_EMAILS = [
-    'krisxmusic@gmail.com', // Replace with your actual admin email
-    'imkrishnabajaj@gmail.com'  // Add more admin emails as needed
-];
-
-// Check if user is admin
-function isAdmin(email) {
-    return ADMIN_EMAILS.includes(email);
-}
+window.auth = auth; // Global for testing
+window.firebaseConfig = firebaseConfig;
