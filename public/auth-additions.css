@@ -1,0 +1,106 @@
+/* ADD THESE TO YOUR style.css */
+
+/* Auth Selection */
+.auth-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    margin: 32px auto 0;
+}
+
+/* Auth Buttons */
+.auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.auth-btn:active {
+    transform: scale(0.98);
+}
+
+.google-btn {
+    background: white;
+    color: #333;
+}
+
+.email-btn, .phone-btn {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.email-btn:active, .phone-btn:active {
+    background: rgba(255,255,255,0.15);
+}
+
+/* Auth Forms */
+.auth-form {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-form.hidden {
+    display: none;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #6C5CE7;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-bottom: 16px;
+}
+
+.auth-form h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+    color: white;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    color: white;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: #6C5CE7;
+}
+
+.text-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+#recaptcha {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
