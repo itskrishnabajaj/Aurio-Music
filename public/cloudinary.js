@@ -1,8 +1,8 @@
 // Cloudinary Configuration
 const CLOUDINARY_CONFIG = {
     cloudName: 'ddyj2njes',
-    uploadPreset: 'aurio_unsigned',
-    apiKey: '123456789012345'
+    uploadPreset: 'aurio_uploads',
+    apiKey: '954645892459371'
 };
 
 // Upload Audio File to Cloudinary
