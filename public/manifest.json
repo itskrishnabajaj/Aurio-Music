@@ -10,25 +10,25 @@
   "categories": ["music", "entertainment"],
   "icons": [
     {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png",
+      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png",
+      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png",
+      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png",
+      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -42,7 +42,7 @@
       "url": "/?tab=search",
       "icons": [
         {
-          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png",
+          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
           "sizes": "192x192"
         }
       ]
@@ -54,7 +54,7 @@
       "url": "/?tab=library",
       "icons": [
         {
-          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png",
+          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
           "sizes": "192x192"
         }
       ]
