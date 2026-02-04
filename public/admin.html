@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6C5CE7">
     <title>Aurio Admin Panel</title>
     <link rel="stylesheet" href="/admin.css">
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png">
@@ -12,72 +12,194 @@
     <!-- Admin Auth Screen -->
     <div id="adminAuthScreen" class="screen active">
         <div class="auth-container">
-            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio Admin" class="logo">
+            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio Admin" class="auth-logo">
             <h1>Admin Panel</h1>
-            <p class="subtitle">Aurio Music Management</p>
+            <p class="auth-subtitle">Aurio Music Management</p>
             <button id="adminGoogleSignIn" class="btn-primary">
                 <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
                 Admin Sign In
             </button>
-            <p class="footer">KrisVeltrix © 2026</p>
+            <p class="auth-footer">KrisVeltrix © 2026</p>
         </div>
     </div>
 
     <!-- Admin Dashboard -->
     <div id="adminDashboard" class="screen">
         <header class="admin-header">
-            <div class="admin-title">
-                <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio" class="logo-small">
+            <div class="header-left">
+                <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio" class="header-logo">
                 <h1>Admin Dashboard</h1>
             </div>
-            <button id="adminSignOut" class="btn-secondary">Sign Out</button>
+            <div class="header-right">
+                <a href="/" class="btn-secondary">View App</a>
+                <button id="adminSignOut" class="btn-secondary">Sign Out</button>
+            </div>
         </header>
 
         <main class="admin-main">
-            <!-- Add Song Section -->
-            <section class="admin-section">
-                <h2>Add New Song</h2>
-                <form id="addSongForm" class="song-form">
-                    <div class="form-group">
-                        <label for="songTitle">Song Title</label>
-                        <input type="text" id="songTitle" required placeholder="Enter song title">
+            <!-- Stats Overview -->
+            <section class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon">🎵</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statTotalSongs">0</div>
+                        <div class="stat-label">Total Songs</div>
                     </div>
-                    <div class="form-group">
-                        <label for="songArtist">Artist Name</label>
-                        <input type="text" id="songArtist" required placeholder="Enter artist name">
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statTotalPlays">0</div>
+                        <div class="stat-label">Total Plays</div>
                     </div>
-                    <div class="form-group">
-                        <label for="songCover">Cover Image URL</label>
-                        <input type="url" id="songCover" required placeholder="https://example.com/cover.jpg">
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💾</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statStorage">0 MB</div>
+                        <div class="stat-label">Storage Used</div>
                     </div>
-                    <div class="form-group">
-                        <label for="songAudio">Audio File URL (MP3)</label>
-                        <input type="url" id="songAudio" required placeholder="https://example.com/song.mp3">
-                    </div>
-                    <button type="submit" class="btn-primary">Add Song</button>
-                </form>
+                </div>
             </section>
 
-            <!-- Songs List Section -->
+            <!-- Upload Section -->
             <section class="admin-section">
-                <h2>Manage Songs</h2>
-                <div id="adminSongList" class="admin-song-list">
+                <h2>Upload Songs</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="audio/*" multiple hidden>
+                    <div class="upload-placeholder" id="uploadPlaceholder">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p>Drag & drop audio files here</p>
+                        <p class="sub">or click to browse</p>
+                        <p class="formats">M4A, MP3, WAV supported</p>
+                    </div>
+                    
+                    <div class="upload-queue" id="uploadQueue" style="display:none;"></div>
+                </div>
+            </section>
+
+            <!-- Library Management -->
+            <section class="admin-section">
+                <div class="section-header">
+                    <h2>Song Library</h2>
+                    <div class="section-controls">
+                        <input type="text" id="adminSearch" placeholder="Search songs..." class="search-input">
+                        <select id="adminSort" class="sort-select">
+                            <option value="recent">Recently Added</option>
+                            <option value="title">Title A-Z</option>
+                            <option value="artist">Artist A-Z</option>
+                            <option value="plays">Most Played</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="admin-song-list" id="adminSongList">
                     <div class="loading">Loading songs...</div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
+    <!-- Upload Progress Modal -->
+    <div id="uploadModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Uploading Songs</h3>
+            <div id="uploadProgressList"></div>
+            <div class="modal-actions">
+                <button id="closeUploadModal" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Song Edit Modal -->
+    <div id="editModal" class="modal" style="display:none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Edit Song</h3>
+                <button class="close-btn" id="closeEditModal">×</button>
+            </div>
+            
+            <form id="editForm" class="edit-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" id="editTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Artist *</label>
+                        <input type="text" id="editArtist" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Album</label>
+                        <input type="text" id="editAlbum">
+                    </div>
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" id="editYear" min="1900" max="2100">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Genre</label>
+                    <input type="text" id="editGenre">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mood Tags</label>
+                    <div class="tag-selector" id="moodTags">
+                        <label class="tag-checkbox"><input type="checkbox" value="Energetic"> Energetic</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Chill"> Chill</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Happy"> Happy</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Sad"> Sad</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Focus"> Focus</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Party"> Party</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Activity Tags</label>
+                    <div class="tag-selector" id="activityTags">
+                        <label class="tag-checkbox"><input type="checkbox" value="Workout"> Workout</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Study"> Study</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Sleep"> Sleep</label>
+                        <label class="tag-checkbox"><input type="checkbox" value="Driving"> Driving</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Cover Image URL</label>
+                    <input type="url" id="editCoverUrl">
+                    <div class="cover-preview" id="coverPreview"></div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelEdit">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- External Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <!-- Admin Script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+
+    <!-- Admin Scripts -->
     <script src="/firebase.js"></script>
+    <script src="/cloudinary.js"></script>
     <script src="/admin.js"></script>
 </body>
 </html>

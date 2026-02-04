@@ -1,37 +1,50 @@
+/* Aurio Admin Panel Styles */
+/* Mobile-First Admin Interface */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 :root {
-    --primary: #6c5ce7;
-    --secondary: #a29bfe;
-    --background: #0f0f1e;
-    --surface: #1a1a2e;
-    --text: #ffffff;
-    --text-secondary: #a0a0a0;
-    --accent: #00d4ff;
-    --error: #ff6b6b;
-    --success: #51cf66;
+    --primary: #6C5CE7;
+    --primary-light: #a29bfe;
+    --accent: #00D4AA;
+    --background: #0A0A0F;
+    --surface: #16161F;
+    --surface-elevated: #1F1F2B;
+    --surface-hover: #28283A;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A0A0B0;
+    --text-tertiary: #6B6B7B;
+    --border: rgba(255, 255, 255, 0.1);
+    --success: #51CF66;
+    --error: #FF6B6B;
+    --warning: #FFD93D;
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--background);
-    color: var(--text);
-    line-height: 1.6;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
+/* ==================== SCREENS ==================== */
 .screen {
     display: none;
+    min-height: 100vh;
 }
 
 .screen.active {
     display: block;
 }
 
-/* Auth Screen */
+/* ==================== AUTH SCREEN ==================== */
 .auth-container {
     display: flex;
     flex-direction: column;
@@ -40,35 +53,37 @@ body {
     min-height: 100vh;
     padding: 20px;
     text-align: center;
+    background: radial-gradient(circle at 50% 0%, rgba(108, 92, 231, 0.15), transparent 70%);
 }
 
-.logo {
+.auth-logo {
     width: 100px;
     height: 100px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
 }
 
 .auth-container h1 {
-    font-size: 36px;
+    font-size: 32px;
     margin-bottom: 8px;
     background: linear-gradient(135deg, var(--primary), var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-.subtitle {
+.auth-subtitle {
     color: var(--text-secondary);
     margin-bottom: 40px;
+    font-size: 16px;
 }
 
 .btn-primary {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 12px;
     padding: 16px 32px;
@@ -79,87 +94,499 @@ body {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
+    box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(108, 92, 231, 0.4);
+.btn-primary:active {
+    transform: scale(0.98);
 }
 
-.footer {
+.auth-footer {
     margin-top: 40px;
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     font-size: 14px;
 }
 
-/* Admin Header */
+/* ==================== ADMIN HEADER ==================== */
 .admin-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
+    padding: 16px 20px;
     background: var(--surface);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
-.admin-title {
+.header-left {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.logo-small {
-    width: 40px;
-    height: 40px;
+.header-logo {
+    width: 36px;
+    height: 36px;
 }
 
 .admin-header h1 {
-    font-size: 24px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.header-right {
+    display: flex;
+    gap: 12px;
 }
 
 .btn-secondary {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
     font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition);
+    text-decoration: none;
+    display: inline-block;
 }
 
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
+.btn-secondary:active {
+    background: var(--surface-hover);
+    transform: scale(0.98);
 }
 
-/* Admin Main */
+/* ==================== MAIN CONTENT ==================== */
 .admin-main {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 20px;
 }
 
+/* ==================== STATS SECTION ==================== */
+.stats-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.stat-icon {
+    font-size: 32px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ==================== ADMIN SECTIONS ==================== */
 .admin-section {
     background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 16px;
     padding: 24px;
     margin-bottom: 24px;
 }
 
 .admin-section h2 {
-    margin-bottom: 20px;
     font-size: 20px;
+    margin-bottom: 20px;
     color: var(--primary);
 }
 
-/* Song Form */
-.song-form {
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.section-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    padding: 10px 16px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.sort-select {
+    padding: 10px 16px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* ==================== UPLOAD AREA ==================== */
+.upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.upload-area:hover {
+    border-color: var(--primary);
+    background: rgba(108, 92, 231, 0.05);
+}
+
+.upload-area.dragging {
+    border-color: var(--accent);
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.upload-placeholder svg {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.upload-placeholder p {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.upload-placeholder .sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.upload-placeholder .formats {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 16px;
+}
+
+/* ==================== UPLOAD QUEUE ==================== */
+.upload-queue {
     display: flex;
     flex-direction: column;
+    gap: 12px;
+}
+
+.upload-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.upload-item-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-elevated);
+    border-radius: 8px;
+    flex-shrink: 0;
+    font-size: 24px;
+}
+
+.upload-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.upload-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.upload-item-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.upload-item-progress {
+    flex: 1;
+    max-width: 200px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--surface-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.upload-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all var(--transition);
+}
+
+.icon-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.icon-btn.success {
+    color: var(--success);
+}
+
+.icon-btn.error {
+    color: var(--error);
+}
+
+/* ==================== SONG LIST ==================== */
+.admin-song-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-song-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all var(--transition);
+}
+
+.admin-song-card:hover {
+    border-color: var(--primary);
+    background: var(--surface-elevated);
+}
+
+.admin-song-cover {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.admin-song-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-song-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-song-artist {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.admin-song-meta {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-song-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-edit {
+    padding: 8px 16px;
+    background: var(--primary);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.btn-edit:active {
+    transform: scale(0.95);
+}
+
+.btn-delete {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--error);
+    border-radius: 8px;
+    color: var(--error);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.btn-delete:active {
+    background: var(--error);
+    color: white;
+    transform: scale(0.95);
+}
+
+/* ==================== MODALS ==================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-large {
+    max-width: 700px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.modal-header h3 {
+    font-size: 20px;
+}
+
+.close-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all var(--transition);
+}
+
+.close-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+/* ==================== FORMS ==================== */
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
 }
 
@@ -175,112 +602,92 @@ body {
     color: var(--text-secondary);
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
     padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--background);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: var(--text);
+    color: var(--text-primary);
     font-size: 14px;
-    transition: all 0.2s;
+    transition: all var(--transition);
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
     outline: none;
     border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.08);
 }
 
-/* Admin Song List */
-.admin-song-list {
+.tag-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.tag-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+}
+
+.tag-checkbox:has(input:checked) {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.tag-checkbox input {
+    margin: 0;
+    width: auto;
+    padding: 0;
+}
+
+.cover-preview {
+    margin-top: 12px;
+}
+
+.cover-preview img {
+    max-width: 200px;
+    border-radius: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* ==================== TOAST ==================== */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.admin-song-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    transition: all 0.2s;
-}
-
-.admin-song-card:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--primary);
-}
-
-.admin-song-cover {
-    width: 80px;
-    height: 80px;
-    border-radius: 8px;
-    object-fit: cover;
-}
-
-.admin-song-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.admin-song-title {
-    font-weight: 600;
-    font-size: 16px;
-    margin-bottom: 4px;
-}
-
-.admin-song-artist {
-    color: var(--text-secondary);
-    font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.admin-song-meta {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.btn-danger {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background: var(--error);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-danger:hover {
-    background: #ff5252;
-    transform: translateY(-2px);
-}
-
-/* Toast Notification */
 .toast {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 16px 24px;
+    padding: 16px 20px;
     background: var(--surface);
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 2000;
-}
-
-.toast.show {
-    transform: translateY(0);
-    opacity: 1;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    min-width: 250px;
+    animation: slideIn 0.3s ease;
 }
 
 .toast.success {
@@ -291,21 +698,79 @@ body {
     border-left: 4px solid var(--error);
 }
 
-.toast.info {
-    border-left: 4px solid var(--accent);
+.toast.warning {
+    border-left: 4px solid var(--warning);
 }
 
-/* Loading & Empty */
-.loading, .error, .empty {
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ==================== LOADING ==================== */
+.loading {
     text-align: center;
     padding: 40px;
     color: var(--text-secondary);
 }
 
-/* Responsive */
+.loading::after {
+    content: "";
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--surface-elevated);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 12px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
-    .admin-main {
-        padding: 16px;
+    .admin-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .header-right {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .header-right button,
+    .header-right a {
+        flex: 1;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .section-controls {
+        flex-direction: column;
+    }
+    
+    .search-input {
+        min-width: 100%;
     }
     
     .admin-song-card {
@@ -316,5 +781,35 @@ body {
     .admin-song-cover {
         width: 100%;
         max-width: 200px;
+        height: auto;
+        aspect-ratio: 1;
     }
+    
+    .admin-song-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toast-container {
+        left: 20px;
+        right: 20px;
+    }
+}
+
+/* ==================== SCROLLBAR ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--surface-elevated);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
 }

@@ -2,94 +2,339 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6C5CE7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Premium music streaming experience by KrisVeltrix">
     <title>Aurio - Music Streaming</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png">
+    <link rel="apple-touch-icon" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png">
 </head>
 <body>
     <!-- Auth Screen -->
     <div id="authScreen" class="screen active">
         <div class="auth-container">
-            <img src="https://res.cloudinary.com/demo/image/upload/v1/aurio-logo.png" alt="Aurio" class="logo-large">
-            <h1>Aurio</h1>
-            <p class="tagline">Your music, everywhere</p>
+            <div class="auth-logo-container">
+                <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio" class="auth-logo">
+                <div class="logo-glow"></div>
+            </div>
+            <h1 class="auth-title">Aurio</h1>
+            <p class="auth-tagline">Your music, everywhere</p>
             <button id="googleSignIn" class="btn-primary">
                 <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
                 Sign in with Google
             </button>
-            <p class="footer-text">By KrisVeltrix</p>
+            <p class="auth-footer">By KrisVeltrix</p>
         </div>
     </div>
 
     <!-- Main App Screen -->
     <div id="appScreen" class="screen">
-        <!-- Header -->
-        <header class="app-header">
-            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio" class="logo-small">
-            <h2>Aurio</h2>
-            <div class="header-actions">
-                <img id="userAvatar" src="" alt="User" class="user-avatar">
-                <button id="signOutBtn" class="icon-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <!-- Top Header -->
+        <header class="app-header" id="appHeader">
+            <div class="header-left">
+                <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770117754/aurio_logo_192_ffqdgn.png" alt="Aurio" class="header-logo">
+                <h1 class="header-title" id="headerTitle">Home</h1>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="searchToggleBtn" aria-label="Search">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </button>
+                <img id="userAvatar" src="" alt="User" class="user-avatar">
             </div>
         </header>
 
-        <!-- Song List -->
-        <main class="song-list" id="songList">
-            <div class="loading">Loading songs...</div>
-        </main>
+        <!-- Search Bar (Hidden by default) -->
+        <div class="search-container" id="searchContainer">
+            <div class="search-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="searchInput" placeholder="Search songs, artists..." autocomplete="off">
+                <button class="search-clear" id="searchClear" style="display:none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="search-filters" id="searchFilters"></div>
+        </div>
 
-        <!-- Player Bar -->
-        <div id="playerBar" class="player-bar hidden">
-            <div class="player-info">
-                <img id="playerCover" src="" alt="Cover" class="player-cover">
-                <div class="player-details">
-                    <div id="playerTitle" class="player-title">Song Title</div>
-                    <div id="playerArtist" class="player-artist">Artist</div>
+        <!-- Content Area -->
+        <main class="app-main" id="appMain">
+            <!-- Home Tab -->
+            <div class="tab-content active" id="homeTab">
+                <div class="content-scroll">
+                    <!-- Quick Actions -->
+                    <section class="quick-actions">
+                        <button class="quick-btn" data-action="liked">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            <span>Liked Songs</span>
+                        </button>
+                        <button class="quick-btn" data-action="recent">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span>Recent</span>
+                        </button>
+                        <button class="quick-btn" data-action="top">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+                            <span>Top Played</span>
+                        </button>
+                    </section>
+
+                    <!-- Smart Playlists -->
+                    <section class="section">
+                        <h2 class="section-title">For You</h2>
+                        <div class="smart-playlists" id="smartPlaylists"></div>
+                    </section>
+
+                    <!-- Recently Played -->
+                    <section class="section" id="recentSection" style="display:none;">
+                        <h2 class="section-title">Recently Played</h2>
+                        <div class="song-grid" id="recentSongs"></div>
+                    </section>
                 </div>
             </div>
-            <div class="player-controls">
-                <button id="prevBtn" class="control-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                </button>
-                <button id="playPauseBtn" class="control-btn play-btn">
-                    <svg id="playIcon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="pauseIcon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
-                </button>
-                <button id="nextBtn" class="control-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+
+            <!-- Library Tab -->
+            <div class="tab-content" id="libraryTab">
+                <div class="content-scroll">
+                    <!-- Library Sections -->
+                    <div class="library-sections">
+                        <button class="section-btn active" data-section="all">All Songs</button>
+                        <button class="section-btn" data-section="playlists">Playlists</button>
+                        <button class="section-btn" data-section="albums">Albums</button>
+                        <button class="section-btn" data-section="artists">Artists</button>
+                    </div>
+
+                    <!-- All Songs View -->
+                    <div class="library-view active" id="allSongsView">
+                        <div class="view-controls">
+                            <button class="control-btn" id="shuffleAllBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                                Shuffle All
+                            </button>
+                            <select class="control-select" id="sortSelect">
+                                <option value="recent">Recently Added</option>
+                                <option value="title">Title A-Z</option>
+                                <option value="artist">Artist A-Z</option>
+                                <option value="plays">Most Played</option>
+                            </select>
+                        </div>
+                        <div class="song-list" id="allSongsList"></div>
+                    </div>
+
+                    <!-- Playlists View -->
+                    <div class="library-view" id="playlistsView">
+                        <button class="create-playlist-btn" id="createPlaylistBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Create Playlist
+                        </button>
+                        <div class="playlist-grid" id="playlistGrid"></div>
+                    </div>
+
+                    <!-- Albums View -->
+                    <div class="library-view" id="albumsView">
+                        <div class="album-grid" id="albumGrid"></div>
+                    </div>
+
+                    <!-- Artists View -->
+                    <div class="library-view" id="artistsView">
+                        <div class="artist-grid" id="artistGrid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Tab (Uses search container) -->
+            <div class="tab-content" id="searchTab">
+                <div class="content-scroll">
+                    <div id="searchResults"></div>
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div class="tab-content" id="profileTab">
+                <div class="content-scroll">
+                    <div class="profile-header">
+                        <img id="profileAvatar" src="" alt="Profile" class="profile-avatar">
+                        <h2 id="profileName">User</h2>
+                        <p id="profileEmail">user@example.com</p>
+                    </div>
+
+                    <section class="stats-section">
+                        <h3 class="section-title">Your Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="statTotalPlays">0</div>
+                                <div class="stat-label">Songs Played</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="statListeningTime">0h</div>
+                                <div class="stat-label">Listening Time</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="statFavorites">0</div>
+                                <div class="stat-label">Liked Songs</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="statPlaylists">0</div>
+                                <div class="stat-label">Playlists</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="settings-section">
+                        <h3 class="section-title">Settings</h3>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label">Theme</div>
+                                    <div class="setting-desc">Dark Mode</div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="themeToggle" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label">Crossfade</div>
+                                    <div class="setting-desc">Smooth transitions</div>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="crossfadeToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn-secondary full-width" id="signOutBtn">Sign Out</button>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mini Player -->
+        <div class="mini-player hidden" id="miniPlayer">
+            <div class="mini-player-content" id="miniPlayerTap">
+                <img id="miniCover" src="" alt="Cover" class="mini-cover">
+                <div class="mini-info">
+                    <div id="miniTitle" class="mini-title">Song Title</div>
+                    <div id="miniArtist" class="mini-artist">Artist</div>
+                </div>
+                <button class="mini-btn" id="miniPlayPauseBtn">
+                    <svg id="miniPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="miniPauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
                 </button>
             </div>
-            <div class="player-progress">
-                <span id="currentTime">0:00</span>
-                <input type="range" id="progressBar" min="0" max="100" value="0" class="progress-slider">
-                <span id="duration">0:00</span>
+            <div class="mini-progress" id="miniProgress"></div>
+        </div>
+
+        <!-- Full Player -->
+        <div class="full-player hidden" id="fullPlayer">
+            <div class="full-player-content">
+                <div class="full-header">
+                    <button class="icon-btn" id="minimizePlayer">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="full-title">Now Playing</div>
+                    <button class="icon-btn" id="playerMenuBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </button>
+                </div>
+
+                <div class="full-artwork" id="fullArtworkContainer">
+                    <img id="fullCover" src="" alt="Cover" class="full-cover">
+                </div>
+
+                <div class="full-info">
+                    <h2 id="fullTitle" class="full-song-title">Song Title</h2>
+                    <p id="fullArtist" class="full-artist">Artist</p>
+                </div>
+
+                <div class="full-controls">
+                    <div class="progress-container">
+                        <span id="currentTime" class="time-label">0:00</span>
+                        <input type="range" id="progressBar" class="progress-slider" min="0" max="100" value="0">
+                        <span id="duration" class="time-label">0:00</span>
+                    </div>
+
+                    <div class="control-buttons">
+                        <button class="control-btn" id="shuffleBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                        </button>
+                        <button class="control-btn" id="prevBtn">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                        </button>
+                        <button class="control-btn play-btn" id="playPauseBtn">
+                            <svg id="playIcon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            <svg id="pauseIcon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+                        </button>
+                        <button class="control-btn" id="nextBtn">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                        </button>
+                        <button class="control-btn" id="repeatBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="extra-controls">
+                        <button class="extra-btn" id="likeBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </button>
+                        <button class="extra-btn" id="queueBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Audio Element (hidden) -->
-        <audio id="audioPlayer" preload="metadata"></audio>
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-btn active" data-tab="home">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span>Home</span>
+            </button>
+            <button class="nav-btn" data-tab="library">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span>Library</span>
+            </button>
+            <button class="nav-btn" data-tab="search">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <span>Search</span>
+            </button>
+            <button class="nav-btn" data-tab="profile">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Profile</span>
+            </button>
+        </nav>
     </div>
 
-    <!-- Firebase SDKs (v9 Compat) -->
+    <!-- Audio Element -->
+    <audio id="audioPlayer" preload="metadata"></audio>
+
+    <!-- Modals/Dialogs will be inserted here -->
+    <div id="modalContainer"></div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- External Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+
     <!-- App Scripts -->
     <script src="/firebase.js"></script>
+    <script src="/cloudinary.js"></script>
     <script src="/app.js"></script>
+
+    <!-- Service Worker Registration -->
     <script>
-        // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/serviceworker.js')
-                    .then(reg => console.log('✅ Service Worker registered'))
-                    .catch(err => console.log('❌ SW registration failed:', err));
+                    .then(reg => console.log('✅ SW registered'))
+                    .catch(err => console.log('❌ SW failed:', err));
             });
         }
     </script>

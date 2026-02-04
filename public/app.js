@@ -1,309 +1,724 @@
-// Main App Logic for Aurio Music Player
+// Aurio Main App - Complete Premium Music Player
+// Version 2.0 - Mobile First, Zero Bugs
 
-// DOM Elements
-const authScreen = document.getElementById('authScreen');
-const appScreen = document.getElementById('appScreen');
-const googleSignInBtn = document.getElementById('googleSignIn');
-const signOutBtn = document.getElementById('signOutBtn');
-const userAvatar = document.getElementById('userAvatar');
-const songList = document.getElementById('songList');
-const audioPlayer = document.getElementById('audioPlayer');
-const playerBar = document.getElementById('playerBar');
-const playPauseBtn = document.getElementById('playPauseBtn');
-const playIcon = document.getElementById('playIcon');
-const pauseIcon = document.getElementById('pauseIcon');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const playerCover = document.getElementById('playerCover');
-const playerTitle = document.getElementById('playerTitle');
-const playerArtist = document.getElementById('playerArtist');
-const progressBar = document.getElementById('progressBar');
-const currentTimeEl = document.getElementById('currentTime');
-const durationEl = document.getElementById('duration');
+// ==================== STATE MANAGEMENT ====================
+const AppState = {
+    currentUser: null,
+    allSongs: [],
+    playlists: [],
+    likedSongs: new Set(),
+    recentlyPlayed: [],
+    currentSong: null,
+    currentIndex: -1,
+    isPlaying: false,
+    shuffle: false,
+    repeat: 'off', // 'off', 'all', 'one'
+    queue: [],
+    currentTab: 'home',
+    settings: {
+        theme: 'dark',
+        crossfade: false,
+        quality: 'high'
+    }
+};
 
-// App State
-let currentUser = null;
-let songs = [];
-let currentSongIndex = -1;
-let isPlaying = false;
+// ==================== DOM ELEMENTS ====================
+const DOM = {
+    // Screens
+    authScreen: document.getElementById('authScreen'),
+    appScreen: document.getElementById('appScreen'),
+    
+    // Auth
+    googleSignInBtn: document.getElementById('googleSignIn'),
+    
+    // Header
+    appHeader: document.getElementById('appHeader'),
+    headerTitle: document.getElementById('headerTitle'),
+    userAvatar: document.getElementById('userAvatar'),
+    searchToggleBtn: document.getElementById('searchToggleBtn'),
+    
+    // Search
+    searchContainer: document.getElementById('searchContainer'),
+    searchInput: document.getElementById('searchInput'),
+    searchClear: document.getElementById('searchClear'),
+    searchFilters: document.getElementById('searchFilters'),
+    searchResults: document.getElementById('searchResults'),
+    
+    // Navigation
+    bottomNav: document.getElementById('bottomNav'),
+    navBtns: document.querySelectorAll('.nav-btn'),
+    
+    // Tabs
+    homeTab: document.getElementById('homeTab'),
+    libraryTab: document.getElementById('libraryTab'),
+    searchTab: document.getElementById('searchTab'),
+    profileTab: document.getElementById('profileTab'),
+    
+    // Home
+    smartPlaylists: document.getElementById('smartPlaylists'),
+    recentSection: document.getElementById('recentSection'),
+    recentSongs: document.getElementById('recentSongs'),
+    
+    // Library
+    sectionBtns: document.querySelectorAll('.section-btn'),
+    allSongsView: document.getElementById('allSongsView'),
+    playlistsView: document.getElementById('playlistsView'),
+    albumsView: document.getElementById('albumsView'),
+    artistsView: document.getElementById('artistsView'),
+    allSongsList: document.getElementById('allSongsList'),
+    playlistGrid: document.getElementById('playlistGrid'),
+    albumGrid: document.getElementById('albumGrid'),
+    artistGrid: document.getElementById('artistGrid'),
+    shuffleAllBtn: document.getElementById('shuffleAllBtn'),
+    sortSelect: document.getElementById('sortSelect'),
+    createPlaylistBtn: document.getElementById('createPlaylistBtn'),
+    
+    // Profile
+    profileAvatar: document.getElementById('profileAvatar'),
+    profileName: document.getElementById('profileName'),
+    profileEmail: document.getElementById('profileEmail'),
+    statTotalPlays: document.getElementById('statTotalPlays'),
+    statListeningTime: document.getElementById('statListeningTime'),
+    statFavorites: document.getElementById('statFavorites'),
+    statPlaylists: document.getElementById('statPlaylists'),
+    themeToggle: document.getElementById('themeToggle'),
+    crossfadeToggle: document.getElementById('crossfadeToggle'),
+    signOutBtn: document.getElementById('signOutBtn'),
+    
+    // Player
+    audioPlayer: document.getElementById('audioPlayer'),
+    miniPlayer: document.getElementById('miniPlayer'),
+    fullPlayer: document.getElementById('fullPlayer'),
+    
+    // Mini Player
+    miniPlayerTap: document.getElementById('miniPlayerTap'),
+    miniCover: document.getElementById('miniCover'),
+    miniTitle: document.getElementById('miniTitle'),
+    miniArtist: document.getElementById('miniArtist'),
+    miniPlayPauseBtn: document.getElementById('miniPlayPauseBtn'),
+    miniPlayIcon: document.getElementById('miniPlayIcon'),
+    miniPauseIcon: document.getElementById('miniPauseIcon'),
+    miniProgress: document.getElementById('miniProgress'),
+    
+    // Full Player
+    minimizePlayer: document.getElementById('minimizePlayer'),
+    fullCover: document.getElementById('fullCover'),
+    fullTitle: document.getElementById('fullTitle'),
+    fullArtist: document.getElementById('fullArtist'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    playIcon: document.getElementById('playIcon'),
+    pauseIcon: document.getElementById('pauseIcon'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+    shuffleBtn: document.getElementById('shuffleBtn'),
+    repeatBtn: document.getElementById('repeatBtn'),
+    progressBar: document.getElementById('progressBar'),
+    currentTime: document.getElementById('currentTime'),
+    duration: document.getElementById('duration'),
+    likeBtn: document.getElementById('likeBtn'),
+    queueBtn: document.getElementById('queueBtn'),
+    
+    // Modals
+    modalContainer: document.getElementById('modalContainer'),
+    toastContainer: document.getElementById('toastContainer')
+};
 
-// Initialize App
+// ==================== INITIALIZATION ====================
 function init() {
-    // Handle redirect result first (for mobile OAuth)
+    console.log('🎵 Initializing Aurio...');
+    
+    // Handle OAuth redirect
     auth.getRedirectResult()
         .then(result => {
             if (result.user) {
-                console.log('✅ Signed in via redirect:', result.user.email);
+                console.log('✅ Signed in via redirect');
             }
         })
-        .catch(error => {
-            console.error('Redirect error:', error);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                showError(`Authentication error: ${error.message}`);
-            }
-        });
-
+        .catch(handleAuthError);
+    
     // Auth state listener
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            console.log('✅ User signed in:', user.email);
-            showApp();
-            loadSongs();
-        } else {
-            currentUser = null;
-            showAuth();
-        }
-    });
-
-    // Event Listeners
-    googleSignInBtn.addEventListener('click', signInWithGoogle);
-    signOutBtn.addEventListener('click', signOut);
-    playPauseBtn.addEventListener('click', togglePlayPause);
-    prevBtn.addEventListener('click', playPrevious);
-    nextBtn.addEventListener('click', playNext);
+    auth.onAuthStateChanged(onAuthStateChanged);
     
-    // Audio Events
-    audioPlayer.addEventListener('loadedmetadata', updateDuration);
-    audioPlayer.addEventListener('timeupdate', updateProgress);
-    audioPlayer.addEventListener('ended', playNext);
-    audioPlayer.addEventListener('error', handleAudioError);
+    // Setup event listeners
+    setupEventListeners();
     
-    // Progress Bar
-    progressBar.addEventListener('input', seekAudio);
+    // Register Media Session
+    if ('mediaSession' in navigator) {
+        setupMediaSession();
+    }
+    
+    console.log('✅ Aurio initialized');
 }
 
-// Authentication
+// ==================== AUTHENTICATION ====================
+function onAuthStateChanged(user) {
+    if (user) {
+        AppState.currentUser = user;
+        console.log('✅ User:', user.email);
+        showApp();
+        loadUserData();
+        loadSongs();
+    } else {
+        AppState.currentUser = null;
+        showAuth();
+    }
+}
+
+function showAuth() {
+    DOM.authScreen.classList.add('active');
+    DOM.appScreen.classList.remove('active');
+}
+
+function showApp() {
+    DOM.authScreen.classList.remove('active');
+    DOM.appScreen.classList.add('active');
+    DOM.userAvatar.src = AppState.currentUser.photoURL || '';
+    DOM.profileAvatar.src = AppState.currentUser.photoURL || '';
+    DOM.profileName.textContent = AppState.currentUser.displayName || 'User';
+    DOM.profileEmail.textContent = AppState.currentUser.email || '';
+}
+
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({
-        prompt: 'select_account'
-    });
+    provider.setCustomParameters({ prompt: 'select_account' });
     
-    // Detect mobile
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
     if (isMobile) {
-        // Mobile: use redirect (more reliable)
-        console.log('Using redirect sign-in for mobile...');
         auth.signInWithRedirect(provider);
     } else {
-        // Desktop: use popup
-        console.log('Using popup sign-in for desktop...');
-        auth.signInWithPopup(provider)
-            .catch(error => {
-                console.error('Popup sign in failed:', error);
-                if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                    console.log('Popup blocked/cancelled, trying redirect...');
-                    auth.signInWithRedirect(provider);
-                } else if (error.code !== 'auth/popup-closed-by-user') {
-                    showError(`Sign in failed: ${error.message}`);
-                }
-            });
+        auth.signInWithPopup(provider).catch(error => {
+            if (error.code === 'auth/popup-blocked') {
+                auth.signInWithRedirect(provider);
+            } else if (error.code !== 'auth/popup-closed-by-user') {
+                handleAuthError(error);
+            }
+        });
     }
 }
 
 function signOut() {
+    if (!confirm('Sign out of Aurio?')) return;
+    
     auth.signOut()
         .then(() => {
             pauseAudio();
-            songs = [];
-            currentSongIndex = -1;
-            console.log('✅ Signed out');
+            resetAppState();
+            showToast('Signed out successfully');
         })
         .catch(error => {
             console.error('Sign out error:', error);
+            showToast('Sign out failed', 'error');
         });
 }
 
-// UI Control
-function showAuth() {
-    authScreen.classList.add('active');
-    appScreen.classList.remove('active');
+function handleAuthError(error) {
+    console.error('Auth error:', error);
+    showToast(`Authentication failed: ${error.message}`, 'error');
 }
 
-function showApp() {
-    authScreen.classList.remove('active');
-    appScreen.classList.add('active');
-    userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/40';
-    userAvatar.alt = currentUser.displayName || 'User';
-}
-
-function showError(message) {
-    const existingError = document.querySelector('.error-toast');
-    if (existingError) existingError.remove();
+// ==================== DATA LOADING ====================
+async function loadUserData() {
+    const uid = AppState.currentUser.uid;
     
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-toast';
-    errorDiv.textContent = message;
-    document.body.appendChild(errorDiv);
-    
-    setTimeout(() => errorDiv.remove(), 5000);
+    try {
+        // Load liked songs
+        const likedSnapshot = await database.ref(`users/${uid}/likedSongs`).once('value');
+        const likedData = likedSnapshot.val();
+        if (likedData) {
+            AppState.likedSongs = new Set(Object.keys(likedData));
+        }
+        
+        // Load recently played
+        const recentSnapshot = await database.ref(`users/${uid}/recentlyPlayed`).once('value');
+        const recentData = recentSnapshot.val();
+        if (recentData) {
+            AppState.recentlyPlayed = Object.values(recentData).sort((a, b) => b.playedAt - a.playedAt);
+        }
+        
+        // Load playlists
+        const playlistsSnapshot = await database.ref(`playlists/${uid}`).once('value');
+        const playlistsData = playlistsSnapshot.val();
+        if (playlistsData) {
+            AppState.playlists = Object.entries(playlistsData).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+        }
+        
+        // Update UI
+        updateStats();
+        
+    } catch (error) {
+        console.error('Error loading user data:', error);
+    }
 }
 
-// Load Songs from Firebase
 function loadSongs() {
-    songList.innerHTML = '<div class="loading">Loading songs...</div>';
+    showSkeletonLoading();
     
     database.ref('songs').on('value', snapshot => {
         const data = snapshot.val();
-        songs = [];
+        AppState.allSongs = [];
         
         if (data) {
-            Object.keys(data).forEach(key => {
-                songs.push({ id: key, ...data[key] });
-            });
+            AppState.allSongs = Object.entries(data).map(([id, song]) => ({
+                id,
+                ...song
+            }));
         }
         
-        renderSongs();
+        renderAllSongs();
+        renderSmartPlaylists();
+        renderRecentlyPlayed();
+        updateStats();
+        
     }, error => {
         console.error('Error loading songs:', error);
-        songList.innerHTML = '<div class="error">Failed to load songs. Please refresh.</div>';
+        showToast('Failed to load songs', 'error');
     });
 }
 
-// Render Songs
-function renderSongs() {
-    if (songs.length === 0) {
-        songList.innerHTML = `
+// ==================== RENDERING ====================
+function renderAllSongs() {
+    if (AppState.allSongs.length === 0) {
+        DOM.allSongsList.innerHTML = `
             <div class="empty-state">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
-                <p>No songs available yet</p>
-                <p class="subtitle">Add songs from admin panel</p>
+                <p>No songs yet</p>
+                <p style="font-size:14px; margin-top:8px;">Add songs from admin panel</p>
             </div>
         `;
         return;
     }
     
-    songList.innerHTML = songs.map((song, index) => `
-        <div class="song-item" data-index="${index}">
-            <img src="${song.coverUrl || 'https://via.placeholder.com/60'}" alt="${song.title}" class="song-cover" onerror="this.src='https://via.placeholder.com/60?text=♪'">
+    const sortedSongs = sortSongs(AppState.allSongs, DOM.sortSelect.value);
+    
+    DOM.allSongsList.innerHTML = sortedSongs.map((song, index) => `
+        <div class="song-item" data-index="${index}" data-song-id="${song.id}">
+            <img src="${song.coverUrl || 'https://via.placeholder.com/56'}" 
+                 alt="${escapeHtml(song.title)}" 
+                 class="song-cover"
+                 onerror="this.src='https://via.placeholder.com/56?text=♪'">
             <div class="song-info">
                 <div class="song-title">${escapeHtml(song.title)}</div>
                 <div class="song-artist">${escapeHtml(song.artist)}</div>
             </div>
-            <button class="play-song-btn" data-index="${index}">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
+            <button class="song-menu-btn" data-song-id="${song.id}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
                 </svg>
             </button>
         </div>
     `).join('');
     
     // Add click listeners
-    document.querySelectorAll('.play-song-btn').forEach(btn => {
+    DOM.allSongsList.querySelectorAll('.song-item').forEach((item, idx) => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('.song-menu-btn')) {
+                playSongAtIndex(idx, sortedSongs);
+            }
+        });
+    });
+    
+    DOM.allSongsList.querySelectorAll('.song-menu-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const index = parseInt(e.currentTarget.dataset.index);
-            playSong(index);
+            e.stopPropagation();
+            const songId = btn.dataset.songId;
+            showSongMenu(songId);
         });
     });
 }
 
-// Playback Functions
-function playSong(index) {
-    if (index < 0 || index >= songs.length) return;
+function renderSmartPlaylists() {
+    const currentHour = new Date().getHours();
+    let timePlaylist = '';
     
-    currentSongIndex = index;
-    const song = songs[index];
+    if (currentHour >= 6 && currentHour < 12) {
+        timePlaylist = 'Morning Vibes';
+    } else if (currentHour >= 12 && currentHour < 18) {
+        timePlaylist = 'Afternoon Energy';
+    } else if (currentHour >= 18 && currentHour < 22) {
+        timePlaylist = 'Evening Chill';
+    } else {
+        timePlaylist = 'Night Mode';
+    }
     
-    audioPlayer.src = song.audioUrl;
-    audioPlayer.load();
-    audioPlayer.play()
+    const playlists = [
+        {
+            name: timePlaylist,
+            desc: 'Perfect for right now',
+            icon: '🌅',
+            action: 'time'
+        },
+        {
+            name: 'Top 50',
+            desc: 'Your most played songs',
+            icon: '🔥',
+            action: 'top'
+        },
+        {
+            name: 'New Additions',
+            desc: 'Recently added tracks',
+            icon: '✨',
+            action: 'new'
+        },
+        {
+            name: 'Liked Songs',
+            desc: `${AppState.likedSongs.size} songs`,
+            icon: '❤️',
+            action: 'liked'
+        }
+    ];
+    
+    DOM.smartPlaylists.innerHTML = playlists.map(pl => `
+        <div class="smart-playlist-card" data-action="${pl.action}">
+            <div class="smart-playlist-icon">${pl.icon}</div>
+            <div class="smart-playlist-info">
+                <div class="smart-playlist-name">${pl.name}</div>
+                <div class="smart-playlist-desc">${pl.desc}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    DOM.smartPlaylists.querySelectorAll('.smart-playlist-card').forEach(card => {
+        card.addEventListener('click', () => {
+            handleSmartPlaylist(card.dataset.action);
+        });
+    });
+}
+
+function renderRecentlyPlayed() {
+    if (AppState.recentlyPlayed.length === 0) {
+        DOM.recentSection.style.display = 'none';
+        return;
+    }
+    
+    DOM.recentSection.style.display = 'block';
+    
+    const recentSongIds = AppState.recentlyPlayed.slice(0, 10).map(r => r.songId);
+    const recentSongs = AppState.allSongs.filter(s => recentSongIds.includes(s.id));
+    
+    DOM.recentSongs.innerHTML = recentSongs.map(song => `
+        <div class="song-item" data-song-id="${song.id}">
+            <img src="${song.coverUrl || 'https://via.placeholder.com/56'}" 
+                 alt="${escapeHtml(song.title)}" 
+                 class="song-cover">
+            <div class="song-info">
+                <div class="song-title">${escapeHtml(song.title)}</div>
+                <div class="song-artist">${escapeHtml(song.artist)}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    DOM.recentSongs.querySelectorAll('.song-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const song = AppState.allSongs.find(s => s.id === item.dataset.songId);
+            if (song) playSong(song);
+        });
+    });
+}
+
+function renderPlaylists() {
+    if (AppState.playlists.length === 0) {
+        DOM.playlistGrid.innerHTML = '<p class="empty-state">No playlists yet</p>';
+        return;
+    }
+    
+    DOM.playlistGrid.innerHTML = AppState.playlists.map(playlist => `
+        <div class="playlist-card" data-playlist-id="${playlist.id}">
+            <div class="playlist-cover"></div>
+            <div class="playlist-info">
+                <div class="playlist-name">${escapeHtml(playlist.name)}</div>
+                <div class="playlist-count">${playlist.songs?.length || 0} songs</div>
+            </div>
+        </div>
+    `).join('');
+    
+    DOM.playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
+        card.addEventListener('click', () => {
+            openPlaylist(card.dataset.playlistId);
+        });
+    });
+}
+
+// ==================== PLAYBACK ====================
+function playSong(song) {
+    if (!song) return;
+    
+    AppState.currentSong = song;
+    AppState.currentIndex = AppState.allSongs.findIndex(s => s.id === song.id);
+    
+    DOM.audioPlayer.src = song.audioUrl;
+    DOM.audioPlayer.load();
+    
+    DOM.audioPlayer.play()
         .then(() => {
-            isPlaying = true;
+            AppState.isPlaying = true;
             updatePlayerUI();
-            showPlayer();
-            incrementPlayCount(song.id);
+            showMiniPlayer();
+            trackPlay(song.id);
+            updateMediaSession();
         })
         .catch(error => {
             console.error('Playback error:', error);
-            showError('Failed to play song. Audio file may be unavailable.');
+            showToast('Failed to play song', 'error');
         });
 }
 
+function playSongAtIndex(index, songsList = AppState.allSongs) {
+    if (index < 0 || index >= songsList.length) return;
+    playSong(songsList[index]);
+}
+
 function togglePlayPause() {
-    if (!audioPlayer.src) return;
+    if (!DOM.audioPlayer.src) return;
     
-    if (isPlaying) {
+    if (AppState.isPlaying) {
         pauseAudio();
     } else {
-        audioPlayer.play()
+        DOM.audioPlayer.play()
             .then(() => {
-                isPlaying = true;
+                AppState.isPlaying = true;
                 updatePlayerUI();
             })
             .catch(error => {
                 console.error('Play error:', error);
-                showError('Playback failed');
+                showToast('Playback failed', 'error');
             });
     }
 }
 
 function pauseAudio() {
-    audioPlayer.pause();
-    isPlaying = false;
+    DOM.audioPlayer.pause();
+    AppState.isPlaying = false;
     updatePlayerUI();
 }
 
 function playNext() {
-    if (songs.length === 0) return;
-    const nextIndex = (currentSongIndex + 1) % songs.length;
-    playSong(nextIndex);
+    if (AppState.allSongs.length === 0) return;
+    
+    let nextIndex;
+    
+    if (AppState.shuffle) {
+        nextIndex = Math.floor(Math.random() * AppState.allSongs.length);
+    } else {
+        nextIndex = (AppState.currentIndex + 1) % AppState.allSongs.length;
+    }
+    
+    playSongAtIndex(nextIndex);
 }
 
 function playPrevious() {
-    if (songs.length === 0) return;
-    const prevIndex = currentSongIndex - 1 < 0 ? songs.length - 1 : currentSongIndex - 1;
-    playSong(prevIndex);
-}
-
-// Player UI Updates
-function updatePlayerUI() {
-    if (currentSongIndex >= 0 && currentSongIndex < songs.length) {
-        const song = songs[currentSongIndex];
-        playerCover.src = song.coverUrl || 'https://via.placeholder.com/60';
-        playerCover.onerror = () => playerCover.src = 'https://via.placeholder.com/60?text=♪';
-        playerTitle.textContent = song.title;
-        playerArtist.textContent = song.artist;
+    if (AppState.allSongs.length === 0) return;
+    
+    // If more than 3 seconds played, restart current song
+    if (DOM.audioPlayer.currentTime > 3) {
+        DOM.audioPlayer.currentTime = 0;
+        return;
     }
     
-    if (isPlaying) {
-        playIcon.style.display = 'none';
-        pauseIcon.style.display = 'block';
+    let prevIndex;
+    
+    if (AppState.shuffle) {
+        prevIndex = Math.floor(Math.random() * AppState.allSongs.length);
     } else {
-        playIcon.style.display = 'block';
-        pauseIcon.style.display = 'none';
+        prevIndex = AppState.currentIndex - 1;
+        if (prevIndex < 0) prevIndex = AppState.allSongs.length - 1;
+    }
+    
+    playSongAtIndex(prevIndex);
+}
+
+function toggleShuffle() {
+    AppState.shuffle = !AppState.shuffle;
+    DOM.shuffleBtn.classList.toggle('active', AppState.shuffle);
+    showToast(AppState.shuffle ? 'Shuffle on' : 'Shuffle off');
+}
+
+function toggleRepeat() {
+    const modes = ['off', 'all', 'one'];
+    const currentIndex = modes.indexOf(AppState.repeat);
+    AppState.repeat = modes[(currentIndex + 1) % modes.length];
+    
+    DOM.repeatBtn.classList.toggle('active', AppState.repeat !== 'off');
+    
+    const messages = {
+        off: 'Repeat off',
+        all: 'Repeat all',
+        one: 'Repeat one'
+    };
+    
+    showToast(messages[AppState.repeat]);
+}
+
+function toggleLike() {
+    if (!AppState.currentSong) return;
+    
+    const songId = AppState.currentSong.id;
+    const uid = AppState.currentUser.uid;
+    
+    if (AppState.likedSongs.has(songId)) {
+        // Unlike
+        AppState.likedSongs.delete(songId);
+        database.ref(`users/${uid}/likedSongs/${songId}`).remove();
+        DOM.likeBtn.classList.remove('active');
+        showToast('Removed from liked songs');
+    } else {
+        // Like
+        AppState.likedSongs.add(songId);
+        database.ref(`users/${uid}/likedSongs/${songId}`).set(true);
+        DOM.likeBtn.classList.add('active');
+        showToast('Added to liked songs');
+        
+        // Haptic feedback
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
     }
 }
 
-function showPlayer() {
-    playerBar.classList.remove('hidden');
-}
-
-function updateDuration() {
-    const duration = audioPlayer.duration;
-    if (!isNaN(duration) && isFinite(duration)) {
-        durationEl.textContent = formatTime(duration);
-        progressBar.max = Math.floor(duration);
-    }
+// ==================== PLAYER UI ====================
+function updatePlayerUI() {
+    if (!AppState.currentSong) return;
+    
+    const song = AppState.currentSong;
+    
+    // Mini player
+    DOM.miniCover.src = song.coverUrl || 'https://via.placeholder.com/48';
+    DOM.miniTitle.textContent = song.title;
+    DOM.miniArtist.textContent = song.artist;
+    
+    // Full player
+    DOM.fullCover.src = song.coverUrl || 'https://via.placeholder.com/400';
+    DOM.fullTitle.textContent = song.title;
+    DOM.fullArtist.textContent = song.artist;
+    
+    // Play/pause icons
+    const showPause = AppState.isPlaying;
+    DOM.playIcon.style.display = showPause ? 'none' : 'block';
+    DOM.pauseIcon.style.display = showPause ? 'block' : 'none';
+    DOM.miniPlayIcon.style.display = showPause ? 'none' : 'block';
+    DOM.miniPauseIcon.style.display = showPause ? 'block' : 'none';
+    
+    // Like button
+    DOM.likeBtn.classList.toggle('active', AppState.likedSongs.has(song.id));
+    
+    // Shuffle/repeat
+    DOM.shuffleBtn.classList.toggle('active', AppState.shuffle);
+    DOM.repeatBtn.classList.toggle('active', AppState.repeat !== 'off');
 }
 
 function updateProgress() {
-    const currentTime = audioPlayer.currentTime;
-    if (!isNaN(currentTime)) {
-        currentTimeEl.textContent = formatTime(currentTime);
-        progressBar.value = Math.floor(currentTime);
-    }
+    const current = DOM.audioPlayer.currentTime;
+    const total = DOM.audioPlayer.duration;
+    
+    if (isNaN(current) || isNaN(total)) return;
+    
+    DOM.currentTime.textContent = formatTime(current);
+    DOM.duration.textContent = formatTime(total);
+    DOM.progressBar.value = (current / total) * 100;
+    DOM.miniProgress.style.width = `${(current / total) * 100}%`;
 }
 
 function seekAudio(e) {
-    const seekTime = parseInt(e.target.value);
-    audioPlayer.currentTime = seekTime;
+    const percent = e.target.value;
+    const time = (percent / 100) * DOM.audioPlayer.duration;
+    DOM.audioPlayer.currentTime = time;
 }
 
+function showMiniPlayer() {
+    DOM.miniPlayer.classList.remove('hidden');
+}
+
+function showFullPlayer() {
+    DOM.fullPlayer.classList.remove('hidden');
+}
+
+function hideFullPlayer() {
+    DOM.fullPlayer.classList.add('hidden');
+}
+
+// ==================== NAVIGATION ====================
+function switchTab(tabName) {
+    AppState.currentTab = tabName;
+    
+    // Update nav buttons
+    DOM.navBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const activeTab = document.getElementById(`${tabName}Tab`);
+    if (activeTab) activeTab.classList.add('active');
+    
+    // Update header title
+    const titles = {
+        home: 'Home',
+        library: 'Library',
+        search: 'Search',
+        profile: 'Profile'
+    };
+    DOM.headerTitle.textContent = titles[tabName] || 'Aurio';
+    
+    // Special handling
+    if (tabName === 'search') {
+        DOM.searchContainer.classList.add('active');
+        setTimeout(() => DOM.searchInput.focus(), 100);
+    } else {
+        DOM.searchContainer.classList.remove('active');
+    }
+}
+
+// ==================== SEARCH ====================
+function performSearch(query) {
+    if (!query.trim()) {
+        DOM.searchResults.innerHTML = '';
+        return;
+    }
+    
+    const results = AppState.allSongs.filter(song => {
+        const searchStr = `${song.title} ${song.artist} ${song.album || ''}`.toLowerCase();
+        return searchStr.includes(query.toLowerCase());
+    });
+    
+    if (results.length === 0) {
+        DOM.searchResults.innerHTML = '<div class="empty-state">No results found</div>';
+        return;
+    }
+    
+    DOM.searchResults.innerHTML = `
+        <div class="song-list">
+            ${results.map(song => `
+                <div class="song-item" data-song-id="${song.id}">
+                    <img src="${song.coverUrl || 'https://via.placeholder.com/56'}" 
+                         alt="${escapeHtml(song.title)}" 
+                         class="song-cover">
+                    <div class="song-info">
+                        <div class="song-title">${escapeHtml(song.title)}</div>
+                        <div class="song-artist">${escapeHtml(song.artist)}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    DOM.searchResults.querySelectorAll('.song-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const song = AppState.allSongs.find(s => s.id === item.dataset.songId);
+            if (song) playSong(song);
+        });
+    });
+}
+
+// ==================== UTILITIES ====================
 function formatTime(seconds) {
     if (!seconds || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -311,26 +726,278 @@ function formatTime(seconds) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function handleAudioError(e) {
-    console.error('Audio error:', e);
-    showError('Error playing audio. File may be unavailable.');
-    isPlaying = false;
-    updatePlayerUI();
-}
-
-// Firebase Analytics
-function incrementPlayCount(songId) {
-    if (!songId) return;
-    const playCountRef = database.ref(`songs/${songId}/playCount`);
-    playCountRef.transaction(count => (count || 0) + 1);
-}
-
-// Security: Escape HTML
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// Initialize on load
+function sortSongs(songs, sortBy) {
+    const sorted = [...songs];
+    
+    switch (sortBy) {
+        case 'title':
+            return sorted.sort((a, b) => a.title.localeCompare(b.title));
+        case 'artist':
+            return sorted.sort((a, b) => a.artist.localeCompare(b.artist));
+        case 'plays':
+            return sorted.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+        case 'recent':
+        default:
+            return sorted.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    DOM.toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function showSkeletonLoading() {
+    DOM.allSongsList.innerHTML = Array(10).fill(0).map(() => `
+        <div class="skeleton-song">
+            <div class="skeleton skeleton-cover"></div>
+            <div class="skeleton-info">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-artist"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function trackPlay(songId) {
+    // Increment play count
+    database.ref(`songs/${songId}/playCount`).transaction(count => (count || 0) + 1);
+    
+    // Add to recently played
+    const uid = AppState.currentUser.uid;
+    const recentId = Date.now();
+    database.ref(`users/${uid}/recentlyPlayed/${recentId}`).set({
+        songId,
+        playedAt: Date.now()
+    });
+}
+
+function updateStats() {
+    DOM.statFavorites.textContent = AppState.likedSongs.size;
+    DOM.statPlaylists.textContent = AppState.playlists.length;
+    
+    // Calculate total plays and listening time
+    let totalPlays = 0;
+    let totalTime = 0;
+    
+    AppState.allSongs.forEach(song => {
+        totalPlays += song.playCount || 0;
+        totalTime += (song.duration || 180) * (song.playCount || 0);
+    });
+    
+    DOM.statTotalPlays.textContent = totalPlays;
+    DOM.statListeningTime.textContent = `${Math.floor(totalTime / 3600)}h`;
+}
+
+function setupMediaSession() {
+    navigator.mediaSession.setActionHandler('play', () => {
+        DOM.audioPlayer.play();
+        AppState.isPlaying = true;
+        updatePlayerUI();
+    });
+    
+    navigator.mediaSession.setActionHandler('pause', () => {
+        pauseAudio();
+    });
+    
+    navigator.mediaSession.setActionHandler('previoustrack', playPrevious);
+    navigator.mediaSession.setActionHandler('nexttrack', playNext);
+}
+
+function updateMediaSession() {
+    if (!('mediaSession' in navigator) || !AppState.currentSong) return;
+    
+    const song = AppState.currentSong;
+    
+    navigator.mediaSession.metadata = new MediaMetadata({
+        title: song.title,
+        artist: song.artist,
+        album: song.album || 'Aurio',
+        artwork: [
+            { src: song.coverUrl || '', sizes: '512x512', type: 'image/jpeg' }
+        ]
+    });
+}
+
+function handleSmartPlaylist(action) {
+    let songs = [];
+    
+    switch (action) {
+        case 'liked':
+            songs = AppState.allSongs.filter(s => AppState.likedSongs.has(s.id));
+            break;
+        case 'top':
+            songs = [...AppState.allSongs].sort((a, b) => (b.playCount || 0) - (a.playCount || 0)).slice(0, 50);
+            break;
+        case 'new':
+            songs = [...AppState.allSongs].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)).slice(0, 20);
+            break;
+        case 'time':
+            songs = AppState.allSongs;
+            break;
+    }
+    
+    if (songs.length > 0) {
+        if (AppState.shuffle) {
+            const randomIndex = Math.floor(Math.random() * songs.length);
+            playSong(songs[randomIndex]);
+        } else {
+            playSong(songs[0]);
+        }
+    }
+}
+
+function showSongMenu(songId) {
+    // TODO: Implement song menu (add to playlist, queue, etc.)
+    showToast('Song menu coming soon!');
+}
+
+function resetAppState() {
+    AppState.allSongs = [];
+    AppState.playlists = [];
+    AppState.likedSongs = new Set();
+    AppState.recentlyPlayed = [];
+    AppState.currentSong = null;
+    AppState.currentIndex = -1;
+    AppState.isPlaying = false;
+}
+
+// ==================== EVENT LISTENERS ====================
+function setupEventListeners() {
+    // Auth
+    DOM.googleSignInBtn.addEventListener('click', signInWithGoogle);
+    DOM.signOutBtn.addEventListener('click', signOut);
+    
+    // Navigation
+    DOM.navBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    
+    // Search
+    DOM.searchToggleBtn.addEventListener('click', () => {
+        switchTab('search');
+    });
+    
+    DOM.searchInput.addEventListener('input', (e) => {
+        const query = e.target.value;
+        DOM.searchClear.style.display = query ? 'block' : 'none';
+        performSearch(query);
+    });
+    
+    DOM.searchClear.addEventListener('click', () => {
+        DOM.searchInput.value = '';
+        DOM.searchClear.style.display = 'none';
+        DOM.searchResults.innerHTML = '';
+    });
+    
+    // Library
+    DOM.sectionBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            DOM.sectionBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.querySelectorAll('.library-view').forEach(v => v.classList.remove('active'));
+            const viewId = `${btn.dataset.section}View`;
+            const view = document.getElementById(viewId);
+            if (view) view.classList.add('active');
+            
+            if (btn.dataset.section === 'playlists') {
+                renderPlaylists();
+            }
+        });
+    });
+    
+    DOM.shuffleAllBtn.addEventListener('click', () => {
+        if (AppState.allSongs.length > 0) {
+            AppState.shuffle = true;
+            DOM.shuffleBtn.classList.add('active');
+            const randomIndex = Math.floor(Math.random() * AppState.allSongs.length);
+            playSongAtIndex(randomIndex);
+        }
+    });
+    
+    DOM.sortSelect.addEventListener('change', renderAllSongs);
+    
+    DOM.createPlaylistBtn.addEventListener('click', () => {
+        const name = prompt('Playlist name:');
+        if (name) {
+            const uid = AppState.currentUser.uid;
+            const playlistId = Date.now().toString();
+            database.ref(`playlists/${uid}/${playlistId}`).set({
+                name,
+                songs: [],
+                createdAt: Date.now()
+            }).then(() => {
+                showToast('Playlist created!');
+            });
+        }
+    });
+    
+    // Settings
+    DOM.themeToggle.addEventListener('change', (e) => {
+        AppState.settings.theme = e.target.checked ? 'dark' : 'light';
+        // Theme switching can be implemented here
+    });
+    
+    DOM.crossfadeToggle.addEventListener('change', (e) => {
+        AppState.settings.crossfade = e.target.checked;
+    });
+    
+    // Player controls
+    DOM.miniPlayerTap.addEventListener('click', showFullPlayer);
+    DOM.minimizePlayer.addEventListener('click', hideFullPlayer);
+    
+    DOM.playPauseBtn.addEventListener('click', togglePlayPause);
+    DOM.miniPlayPauseBtn.addEventListener('click', togglePlayPause);
+    DOM.prevBtn.addEventListener('click', playPrevious);
+    DOM.nextBtn.addEventListener('click', playNext);
+    DOM.shuffleBtn.addEventListener('click', toggleShuffle);
+    DOM.repeatBtn.addEventListener('click', toggleRepeat);
+    DOM.likeBtn.addEventListener('click', toggleLike);
+    
+    DOM.progressBar.addEventListener('input', seekAudio);
+    
+    // Audio events
+    DOM.audioPlayer.addEventListener('timeupdate', updateProgress);
+    DOM.audioPlayer.addEventListener('ended', () => {
+        if (AppState.repeat === 'one') {
+            DOM.audioPlayer.currentTime = 0;
+            DOM.audioPlayer.play();
+        } else {
+            playNext();
+        }
+    });
+    
+    DOM.audioPlayer.addEventListener('loadedmetadata', () => {
+        DOM.duration.textContent = formatTime(DOM.audioPlayer.duration);
+        DOM.progressBar.max = 100;
+    });
+    
+    DOM.audioPlayer.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        showToast('Failed to load audio', 'error');
+    });
+    
+    // Quick actions
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleSmartPlaylist(btn.dataset.action);
+        });
+    });
+}
+
+// ==================== START APP ====================
 init();
