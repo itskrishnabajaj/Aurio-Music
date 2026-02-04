@@ -1,11 +1,12 @@
 // Firebase Configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyBKz8vHQY5x7mL3wN9pR2tV6uW8yX0zC1D",
-    authDomain: "aurio-music.firebaseapp.com",
-    projectId: "aurio-music",
-    storageBucket: "aurio-music.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:abcdef1234567890"
+  apiKey: "AIzaSyCMY1H6-QLhtUfo6J42Al3DkfAkd1b6qcE",
+  authDomain: "aurio-music-app.firebaseapp.com",
+  databaseURL: "https://aurio-music-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "aurio-music-app",
+  storageBucket: "aurio-music-app.firebasestorage.app",
+  messagingSenderId: "849403275884",
+  appId: "1:849403275884:web:79a001b4cc1837c2260649"
 };
 
 // Initialize Firebase
