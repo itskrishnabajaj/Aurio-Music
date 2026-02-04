@@ -1,73 +1,51 @@
 {
-  "name": "Aurio - Music Streaming",
+  "name": "Aurio Music",
   "short_name": "Aurio",
-  "description": "Premium music streaming experience by KrisVeltrix",
+  "description": "Your music, your way - Stream music anywhere",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0F",
-  "theme_color": "#6C5CE7",
+  "background_color": "#121212",
+  "theme_color": "#1db954",
   "orientation": "portrait",
-  "categories": ["music", "entertainment"],
   "icons": [
     {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
+      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/w_192,h_192,c_fill/v1770220405/aurio_branding_nvrbwx.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
+      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/w_512,h_512,c_fill/v1770220405/aurio_branding_nvrbwx.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
+  "categories": ["music", "entertainment"],
   "shortcuts": [
     {
       "name": "Search Music",
       "short_name": "Search",
-      "description": "Search for songs",
-      "url": "/?tab=search",
+      "description": "Search for songs and artists",
+      "url": "/?section=search",
       "icons": [
         {
-          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
-          "sizes": "192x192"
+          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/w_96,h_96,c_fill/v1770220405/aurio_branding_nvrbwx.png",
+          "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "My Library",
-      "short_name": "Library",
-      "description": "Browse your library",
-      "url": "/?tab=library",
+      "name": "Your Profile",
+      "short_name": "Profile",
+      "description": "View your music profile",
+      "url": "/?section=profile",
       "icons": [
         {
-          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/v1770219256/Aurio_logo_mxvvij.png",
-          "sizes": "192x192"
+          "src": "https://res.cloudinary.com/ddyj2njes/image/upload/w_96,h_96,c_fill/v1770220405/aurio_branding_nvrbwx.png",
+          "sizes": "96x96"
         }
       ]
     }
-  ],
-  "share_target": {
-    "action": "/",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  ]
 }

@@ -1,106 +1,179 @@
-// Cloudinary Configuration for Aurio
-// Used for uploading audio files and cover art
-
+// Cloudinary Configuration
 const CLOUDINARY_CONFIG = {
     cloudName: 'ddyj2njes',
-    uploadPreset: 'aurio_uploads',
-    apiKey: '954645892459371',
-    // Note: API Secret should never be in client-side code
-    // We use unsigned uploads with upload preset instead
+    uploadPreset: 'aurio_unsigned',
+    apiKey: '123456789012345'
 };
 
-// Cloudinary Upload URL
-const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/auto/upload`;
-
-/**
- * Upload file to Cloudinary
- * @param {File} file - The file to upload
- * @param {Function} progressCallback - Called with progress percentage
- * @returns {Promise} - Resolves with Cloudinary response
- */
-async function uploadToCloudinary(file, progressCallback) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-    formData.append('folder', 'aurio');
-    
-    // Add resource type based on file
-    const isAudio = file.type.startsWith('audio/');
-    if (isAudio) {
-        formData.append('resource_type', 'video'); // Cloudinary treats audio as video
-    }
-
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
+// Upload Audio File to Cloudinary
+async function uploadAudio(file, onProgress) {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+        formData.append('resource_type', 'video'); // Audio files use 'video' resource type
         
-        // Track upload progress
-        xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable && progressCallback) {
-                const percentComplete = (e.loaded / e.total) * 100;
-                progressCallback(Math.round(percentComplete));
+        const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/upload`,
+            {
+                method: 'POST',
+                body: formData
             }
-        });
+        );
+        
+        if (!response.ok) {
+            throw new Error('Upload failed');
+        }
+        
+        const data = await response.json();
+        return {
+            url: data.secure_url,
+            publicId: data.public_id,
+            duration: data.duration,
+            format: data.format,
+            bytes: data.bytes
+        };
+    } catch (error) {
+        console.error('Audio upload error:', error);
+        throw error;
+    }
+}
 
-        // Handle completion
-        xhr.addEventListener('load', () => {
-            if (xhr.status === 200) {
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    resolve(response);
-                } catch (error) {
-                    reject(new Error('Invalid response from Cloudinary'));
-                }
-            } else {
-                reject(new Error(`Upload failed: ${xhr.statusText}`));
+// Upload Image File to Cloudinary
+async function uploadImage(file, onProgress) {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+        formData.append('resource_type', 'image');
+        
+        const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/upload`,
+            {
+                method: 'POST',
+                body: formData
             }
-        });
+        );
+        
+        if (!response.ok) {
+            throw new Error('Upload failed');
+        }
+        
+        const data = await response.json();
+        return {
+            url: data.secure_url,
+            publicId: data.public_id,
+            width: data.width,
+            height: data.height,
+            format: data.format,
+            bytes: data.bytes
+        };
+    } catch (error) {
+        console.error('Image upload error:', error);
+        throw error;
+    }
+}
 
-        // Handle errors
-        xhr.addEventListener('error', () => {
-            reject(new Error('Network error during upload'));
+// Extract Audio Metadata
+async function extractAudioMetadata(file) {
+    return new Promise((resolve, reject) => {
+        const audio = new Audio();
+        const objectUrl = URL.createObjectURL(file);
+        
+        audio.addEventListener('loadedmetadata', () => {
+            const metadata = {
+                duration: Math.round(audio.duration),
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type
+            };
+            
+            URL.revokeObjectURL(objectUrl);
+            resolve(metadata);
         });
-
-        xhr.addEventListener('abort', () => {
-            reject(new Error('Upload aborted'));
+        
+        audio.addEventListener('error', (error) => {
+            URL.revokeObjectURL(objectUrl);
+            reject(error);
         });
-
-        // Send request
-        xhr.open('POST', CLOUDINARY_UPLOAD_URL);
-        xhr.send(formData);
+        
+        audio.src = objectUrl;
     });
 }
 
-/**
- * Delete file from Cloudinary (requires backend - not implemented)
- * For now, we just remove from database
- */
-function deleteFromCloudinary(publicId) {
-    console.warn('Delete from Cloudinary requires backend. File remains in cloud but removed from app.');
-    return Promise.resolve();
+// Format Duration (seconds to mm:ss)
+function formatDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-/**
- * Get optimized image URL
- * @param {string} url - Original Cloudinary URL
- * @param {number} width - Desired width
- * @param {number} height - Desired height
- * @returns {string} - Optimized URL
- */
-function getOptimizedImageUrl(url, width = 300, height = 300) {
-    if (!url || !url.includes('cloudinary.com')) return url;
+// Parse Filename for Metadata
+function parseFilenameMetadata(filename) {
+    // Remove extension
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
     
-    // Insert transformation parameters
-    const parts = url.split('/upload/');
-    if (parts.length === 2) {
-        return `${parts[0]}/upload/w_${width},h_${height},c_fill,q_auto,f_auto/${parts[1]}`;
+    // Try to parse patterns like "Artist - Song Title" or "Song Title - Artist"
+    const parts = nameWithoutExt.split('-').map(p => p.trim());
+    
+    if (parts.length >= 2) {
+        return {
+            title: parts[1],
+            artist: parts[0]
+        };
     }
-    return url;
+    
+    return {
+        title: nameWithoutExt,
+        artist: 'Unknown Artist'
+    };
 }
 
-// Export for use in other files
-if (typeof window !== 'undefined') {
-    window.CLOUDINARY_CONFIG = CLOUDINARY_CONFIG;
-    window.uploadToCloudinary = uploadToCloudinary;
-    window.deleteFromCloudinary = deleteFromCloudinary;
-    window.getOptimizedImageUrl = getOptimizedImageUrl;
+// Generate Cover Image URL with transformations
+function getCoverImageUrl(publicId, options = {}) {
+    const {
+        width = 300,
+        height = 300,
+        quality = 'auto',
+        format = 'jpg'
+    } = options;
+    
+    return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/w_${width},h_${height},c_fill,q_${quality},f_${format}/${publicId}`;
 }
+
+// Generate Thumbnail URL
+function getThumbnailUrl(publicId, size = 150) {
+    return getCoverImageUrl(publicId, {
+        width: size,
+        height: size,
+        quality: 'auto',
+        format: 'jpg'
+    });
+}
+
+// Optimize Audio URL
+function getOptimizedAudioUrl(publicId) {
+    return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/video/upload/q_auto/${publicId}`;
+}
+
+// Delete Resource from Cloudinary (requires backend/Cloud Function)
+async function deleteResource(publicId, resourceType = 'image') {
+    // This would typically be done via a Cloud Function for security
+    // Frontend cannot directly delete from Cloudinary
+    console.log('Delete request for:', publicId, resourceType);
+    // Would call your Cloud Function endpoint here
+}
+
+// Export functions
+window.cloudinaryService = {
+    uploadAudio,
+    uploadImage,
+    extractAudioMetadata,
+    formatDuration,
+    parseFilenameMetadata,
+    getCoverImageUrl,
+    getThumbnailUrl,
+    getOptimizedAudioUrl,
+    deleteResource,
+    config: CLOUDINARY_CONFIG
+};

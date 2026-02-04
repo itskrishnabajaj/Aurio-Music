@@ -1,578 +1,566 @@
-// Aurio Admin Panel - Complete Upload & Management System
-// Handles M4A metadata extraction and Cloudinary uploads
+// Global State
+let currentUser = null;
+let audioFile = null;
+let coverFile = null;
+let allSongs = [];
+let currentEditSongId = null;
 
-// ==================== STATE ====================
-const AdminState = {
-    currentAdmin: null,
-    allSongs: [],
-    uploadQueue: [],
-    editingSong: null
-};
+// DOM Elements
+const authCheckScreen = document.getElementById('authCheckScreen');
+const adminPanel = document.getElementById('adminPanel');
+const loadingSpinner = document.getElementById('loadingSpinner');
+const toast = document.getElementById('toast');
 
-// ==================== DOM ELEMENTS ====================
-const DOM = {
-    authScreen: document.getElementById('adminAuthScreen'),
-    dashboard: document.getElementById('adminDashboard'),
-    signInBtn: document.getElementById('adminGoogleSignIn'),
-    signOutBtn: document.getElementById('adminSignOut'),
-    
-    // Stats
-    statTotalSongs: document.getElementById('statTotalSongs'),
-    statTotalPlays: document.getElementById('statTotalPlays'),
-    statStorage: document.getElementById('statStorage'),
-    
-    // Upload
-    uploadArea: document.getElementById('uploadArea'),
-    uploadPlaceholder: document.getElementById('uploadPlaceholder'),
-    fileInput: document.getElementById('fileInput'),
-    uploadQueue: document.getElementById('uploadQueue'),
-    uploadModal: document.getElementById('uploadModal'),
-    uploadProgressList: document.getElementById('uploadProgressList'),
-    closeUploadModal: document.getElementById('closeUploadModal'),
-    
-    // Library
-    adminSearch: document.getElementById('adminSearch'),
-    adminSort: document.getElementById('adminSort'),
-    adminSongList: document.getElementById('adminSongList'),
-    
-    // Edit Modal
-    editModal: document.getElementById('editModal'),
-    closeEditModal: document.getElementById('closeEditModal'),
-    editForm: document.getElementById('editForm'),
-    editTitle: document.getElementById('editTitle'),
-    editArtist: document.getElementById('editArtist'),
-    editAlbum: document.getElementById('editAlbum'),
-    editYear: document.getElementById('editYear'),
-    editGenre: document.getElementById('editGenre'),
-    moodTags: document.getElementById('moodTags'),
-    activityTags: document.getElementById('activityTags'),
-    editCoverUrl: document.getElementById('editCoverUrl'),
-    coverPreview: document.getElementById('coverPreview'),
-    cancelEdit: document.getElementById('cancelEdit'),
-    
-    // Toast
-    toastContainer: document.getElementById('toastContainer')
-};
+// Tabs
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabPanels = document.querySelectorAll('.tab-panel');
 
-// ==================== INITIALIZATION ====================
-function init() {
-    console.log('🛠️ Initializing Admin Panel...');
-    
-    // Handle redirect
-    auth.getRedirectResult()
-        .then(result => {
-            if (result.user) console.log('✅ Admin redirect success');
-        })
-        .catch(error => console.error('Redirect error:', error));
-    
-    // Auth listener
-    auth.onAuthStateChanged(onAuthChanged);
-    
-    // Setup listeners
-    setupEventListeners();
-    
-    console.log('✅ Admin initialized');
-}
+// Upload Elements
+const audioUploadArea = document.getElementById('audioUploadArea');
+const audioFileInput = document.getElementById('audioFileInput');
+const audioFileName = document.getElementById('audioFileName');
+const coverUploadArea = document.getElementById('coverUploadArea');
+const coverFileInput = document.getElementById('coverFileInput');
+const coverFileName = document.getElementById('coverFileName');
+const coverPreview = document.getElementById('coverPreview');
 
-// ==================== AUTHENTICATION ====================
-function onAuthChanged(user) {
-    if (user && isAdmin(user.email)) {
-        AdminState.currentAdmin = user;
-        console.log('✅ Admin:', user.email);
-        showDashboard();
-        loadSongs();
-    } else if (user && !isAdmin(user.email)) {
-        showToast('Access denied: Not an admin', 'error');
-        auth.signOut();
-    } else {
-        AdminState.currentAdmin = null;
-        showAuth();
-    }
-}
+// Form Elements
+const songMetadataForm = document.getElementById('songMetadataForm');
+const songTitle = document.getElementById('songTitle');
+const songArtist = document.getElementById('songArtist');
+const songAlbum = document.getElementById('songAlbum');
+const songLanguage = document.getElementById('songLanguage');
+const songDuration = document.getElementById('songDuration');
+const artistImage = document.getElementById('artistImage');
+const uploadProgress = document.getElementById('uploadProgress');
+const progressFill = document.getElementById('progressFill');
+const uploadStatus = document.getElementById('uploadStatus');
+const uploadSongBtn = document.getElementById('uploadSongBtn');
 
-function showAuth() {
-    DOM.authScreen.classList.add('active');
-    DOM.dashboard.classList.remove('active');
-}
+// Songs List
+const searchSongsInput = document.getElementById('searchSongs');
+const songsList = document.getElementById('songsList');
 
-function showDashboard() {
-    DOM.authScreen.classList.remove('active');
-    DOM.dashboard.classList.add('active');
-}
+// Edit Modal
+const editSongModal = document.getElementById('editSongModal');
+const editSongForm = document.getElementById('editSongForm');
+const editTitle = document.getElementById('editTitle');
+const editArtist = document.getElementById('editArtist');
+const editAlbum = document.getElementById('editAlbum');
+const editLanguage = document.getElementById('editLanguage');
+const editArtistImage = document.getElementById('editArtistImage');
+const editPlayCount = document.getElementById('editPlayCount');
+const editLikes = document.getElementById('editLikes');
 
-function adminSignIn() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-        auth.signInWithRedirect(provider);
-    } else {
-        auth.signInWithPopup(provider).catch(error => {
-            if (error.code === 'auth/popup-blocked') {
-                auth.signInWithRedirect(provider);
-            } else if (error.code !== 'auth/popup-closed-by-user') {
-                showToast('Sign in failed', 'error');
+// Playlists
+const createPlaylistBtn = document.getElementById('createPlaylistBtn');
+const createPlaylistModal = document.getElementById('createPlaylistModal');
+const createPlaylistForm = document.getElementById('createPlaylistForm');
+const playlistsList = document.getElementById('playlistsList');
+
+// Sign Out
+const adminSignOutBtn = document.getElementById('adminSignOutBtn');
+
+// Initialize
+window.addEventListener('DOMContentLoaded', () => {
+    setupAuthCheck();
+    setupTabNavigation();
+    setupFileUpload();
+    setupFormHandlers();
+});
+
+// Auth Check
+async function setupAuthCheck() {
+    firebaseAuth.auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            
+            // Check if user is admin
+            const isAdminUser = await firebaseDB.isAdmin(user.uid);
+            
+            if (isAdminUser) {
+                authCheckScreen.classList.remove('active');
+                adminPanel.classList.add('active');
+                await loadAdminData();
+            } else {
+                showToast('Access denied: Admin only');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
             }
-        });
-    }
-}
-
-function adminSignOut() {
-    if (!confirm('Sign out?')) return;
-    auth.signOut().then(() => showToast('Signed out'));
-}
-
-// ==================== LOAD SONGS ====================
-function loadSongs() {
-    DOM.adminSongList.innerHTML = '<div class="loading">Loading...</div>';
-    
-    database.ref('songs').on('value', snapshot => {
-        const data = snapshot.val();
-        AdminState.allSongs = [];
-        
-        if (data) {
-            AdminState.allSongs = Object.entries(data).map(([id, song]) => ({
-                id,
-                ...song
-            }));
+        } else {
+            showToast('Please sign in as admin');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
         }
-        
-        renderSongs();
-        updateStats();
-    }, error => {
-        console.error('Load error:', error);
-        showToast('Failed to load songs', 'error');
     });
 }
 
-function renderSongs() {
-    const filtered = filterAndSortSongs();
+// Load Admin Data
+async function loadAdminData() {
+    showLoading();
+    try {
+        await loadAllSongs();
+        await loadPlaylists();
+    } catch (error) {
+        console.error('Error loading admin data:', error);
+        showToast('Error loading data');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Setup Tab Navigation
+function setupTabNavigation() {
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.dataset.tab;
+            
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabPanels.forEach(p => p.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        });
+    });
+}
+
+// Setup File Upload
+function setupFileUpload() {
+    // Audio Upload
+    audioUploadArea.addEventListener('click', () => audioFileInput.click());
     
-    if (filtered.length === 0) {
-        DOM.adminSongList.innerHTML = '<div class="empty-state">No songs found</div>';
+    audioUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        audioUploadArea.classList.add('dragging');
+    });
+    
+    audioUploadArea.addEventListener('dragleave', () => {
+        audioUploadArea.classList.remove('dragging');
+    });
+    
+    audioUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        audioUploadArea.classList.remove('dragging');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('audio/')) {
+            handleAudioFile(file);
+        } else {
+            showToast('Please drop an audio file');
+        }
+    });
+    
+    audioFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleAudioFile(file);
+        }
+    });
+    
+    // Cover Upload
+    coverUploadArea.addEventListener('click', () => coverFileInput.click());
+    
+    coverUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        coverUploadArea.classList.add('dragging');
+    });
+    
+    coverUploadArea.addEventListener('dragleave', () => {
+        coverUploadArea.classList.remove('dragging');
+    });
+    
+    coverUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        coverUploadArea.classList.remove('dragging');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            handleCoverFile(file);
+        } else {
+            showToast('Please drop an image file');
+        }
+    });
+    
+    coverFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleCoverFile(file);
+        }
+    });
+}
+
+// Handle Audio File
+async function handleAudioFile(file) {
+    audioFile = file;
+    audioFileName.textContent = file.name;
+    audioFileName.classList.add('show');
+    
+    try {
+        // Extract metadata
+        const metadata = await cloudinaryService.extractAudioMetadata(file);
+        const parsedInfo = cloudinaryService.parseFilenameMetadata(file.name);
+        
+        songTitle.value = parsedInfo.title;
+        songArtist.value = parsedInfo.artist;
+        songDuration.value = cloudinaryService.formatDuration(metadata.duration);
+        
+        showToast('Audio file loaded successfully');
+    } catch (error) {
+        console.error('Error extracting metadata:', error);
+        showToast('Audio loaded (metadata extraction failed)');
+    }
+}
+
+// Handle Cover File
+function handleCoverFile(file) {
+    coverFile = file;
+    coverFileName.textContent = file.name;
+    coverFileName.classList.add('show');
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        coverPreview.innerHTML = `<img src="${e.target.result}" alt="Cover">`;
+        coverPreview.classList.add('show');
+    };
+    reader.readAsDataURL(file);
+    
+    showToast('Cover image loaded');
+}
+
+// Setup Form Handlers
+function setupFormHandlers() {
+    songMetadataForm.addEventListener('submit', handleSongUpload);
+    editSongForm.addEventListener('submit', handleSongUpdate);
+    createPlaylistForm.addEventListener('submit', handlePlaylistCreate);
+    
+    searchSongsInput.addEventListener('input', debounce(filterSongs, 300));
+    
+    createPlaylistBtn.addEventListener('click', () => {
+        createPlaylistModal.classList.add('active');
+    });
+    
+    adminSignOutBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to sign out?')) {
+            await firebaseAuth.signOut();
+            window.location.href = '/';
+        }
+    });
+}
+
+// Handle Song Upload
+async function handleSongUpload(e) {
+    e.preventDefault();
+    
+    if (!audioFile) {
+        showToast('Please select an audio file');
         return;
     }
     
-    DOM.adminSongList.innerHTML = filtered.map(song => `
-        <div class="admin-song-card" data-song-id="${song.id}">
-            <img src="${song.coverUrl || 'https://via.placeholder.com/80?text=♪'}" 
-                 alt="${escapeHtml(song.title)}" 
-                 class="admin-song-cover"
-                 onerror="this.src='https://via.placeholder.com/80?text=♪'">
-            <div class="admin-song-details">
-                <div class="admin-song-title">${escapeHtml(song.title)}</div>
-                <div class="admin-song-artist">${escapeHtml(song.artist)}</div>
-                <div class="admin-song-meta">
-                    <span>Plays: ${song.playCount || 0}</span>
-                    <span>${song.duration ? formatDuration(song.duration) : ''}</span>
-                    <span>${formatDate(song.addedAt)}</span>
-                </div>
+    if (!coverFile) {
+        showToast('Please select a cover image');
+        return;
+    }
+    
+    uploadSongBtn.disabled = true;
+    uploadProgress.style.display = 'block';
+    
+    try {
+        // Upload audio
+        uploadStatus.textContent = 'Uploading audio...';
+        progressFill.style.width = '30%';
+        const audioData = await cloudinaryService.uploadAudio(audioFile);
+        
+        // Upload cover
+        uploadStatus.textContent = 'Uploading cover image...';
+        progressFill.style.width = '60%';
+        const coverData = await cloudinaryService.uploadImage(coverFile);
+        
+        // Save to Firestore
+        uploadStatus.textContent = 'Saving to database...';
+        progressFill.style.width = '90%';
+        
+        const songData = {
+            title: songTitle.value.trim(),
+            artist: songArtist.value.trim(),
+            album: songAlbum.value.trim() || null,
+            language: songLanguage.value,
+            duration: songDuration.value,
+            audioUrl: audioData.url,
+            coverUrl: coverData.url,
+            artistImage: artistImage.value.trim() || coverData.url,
+            playCount: 0,
+            likes: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            uploadedBy: currentUser.uid
+        };
+        
+        await firebaseAuth.db.collection('songs').add(songData);
+        
+        progressFill.style.width = '100%';
+        uploadStatus.textContent = 'Upload complete!';
+        
+        showToast('Song uploaded successfully');
+        
+        // Reset form
+        setTimeout(() => {
+            resetUploadForm();
+            loadAllSongs();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        showToast('Upload failed: ' + error.message);
+        uploadSongBtn.disabled = false;
+        uploadProgress.style.display = 'none';
+    }
+}
+
+// Reset Upload Form
+function resetUploadForm() {
+    songMetadataForm.reset();
+    audioFile = null;
+    coverFile = null;
+    audioFileName.classList.remove('show');
+    coverFileName.classList.remove('show');
+    coverPreview.classList.remove('show');
+    uploadProgress.style.display = 'none';
+    uploadSongBtn.disabled = false;
+    progressFill.style.width = '0%';
+}
+
+// Load All Songs
+async function loadAllSongs() {
+    try {
+        allSongs = await firebaseDB.getAllSongs();
+        renderSongsList(allSongs);
+    } catch (error) {
+        console.error('Error loading songs:', error);
+        showToast('Error loading songs');
+    }
+}
+
+// Render Songs List
+function renderSongsList(songs) {
+    if (songs.length === 0) {
+        songsList.innerHTML = '<p style="color: var(--text-secondary); padding: 20px;">No songs available</p>';
+        return;
+    }
+    
+    songsList.innerHTML = songs.map(song => `
+        <div class="song-item" data-song-id="${song.id}">
+            <img src="${song.coverUrl}" alt="${song.title}" class="song-cover-small">
+            <div class="song-info">
+                <div class="song-title">${song.title}</div>
+                <div class="song-details">${song.artist} • ${song.language || 'Unknown'} • ${song.duration}</div>
             </div>
-            <div class="admin-song-actions">
-                <button class="btn-edit" onclick="editSong('${song.id}')">Edit</button>
-                <button class="btn-delete" onclick="deleteSong('${song.id}', '${escapeHtml(song.title)}')">Delete</button>
+            <div class="song-stats">
+                <span>▶ ${song.playCount || 0}</span>
+                <span>♥ ${song.likes || 0}</span>
+            </div>
+            <div class="song-actions">
+                <button class="action-btn" onclick="openEditModal('${song.id}')">Edit</button>
             </div>
         </div>
     `).join('');
 }
 
-function filterAndSortSongs() {
-    let songs = [...AdminState.allSongs];
+// Filter Songs
+function filterSongs() {
+    const query = searchSongsInput.value.toLowerCase().trim();
     
-    // Filter by search
-    const query = DOM.adminSearch.value.toLowerCase();
-    if (query) {
-        songs = songs.filter(s => 
-            s.title.toLowerCase().includes(query) ||
-            s.artist.toLowerCase().includes(query) ||
-            (s.album || '').toLowerCase().includes(query)
-        );
+    if (!query) {
+        renderSongsList(allSongs);
+        return;
     }
     
-    // Sort
-    const sortBy = DOM.adminSort.value;
-    switch (sortBy) {
-        case 'title':
-            songs.sort((a, b) => a.title.localeCompare(b.title));
-            break;
-        case 'artist':
-            songs.sort((a, b) => a.artist.localeCompare(b.artist));
-            break;
-        case 'plays':
-            songs.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
-            break;
-        case 'recent':
-        default:
-            songs.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-    }
-    
-    return songs;
-}
-
-// ==================== FILE UPLOAD ====================
-function handleFileSelect(files) {
-    if (!files || files.length === 0) return;
-    
-    DOM.uploadPlaceholder.style.display = 'none';
-    DOM.uploadQueue.style.display = 'block';
-    
-    Array.from(files).forEach(file => {
-        if (!file.type.startsWith('audio/')) {
-            showToast(`Skipped ${file.name}: Not an audio file`, 'warning');
-            return;
-        }
-        
-        processFile(file);
+    const filtered = allSongs.filter(song => {
+        return song.title.toLowerCase().includes(query) ||
+               song.artist.toLowerCase().includes(query) ||
+               (song.album && song.album.toLowerCase().includes(query));
     });
+    
+    renderSongsList(filtered);
 }
 
-async function processFile(file) {
-    const uploadId = Date.now() + Math.random();
-    
-    // Add to UI
-    const itemHtml = `
-        <div class="upload-item" id="upload-${uploadId}">
-            <div class="upload-item-icon">🎵</div>
-            <div class="upload-item-info">
-                <div class="upload-item-name">${escapeHtml(file.name)}</div>
-                <div class="upload-item-meta">Extracting metadata...</div>
-            </div>
-            <div class="upload-item-progress">
-                <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-                <div class="progress-text">0%</div>
-            </div>
-        </div>
-    `;
-    
-    DOM.uploadQueue.insertAdjacentHTML('beforeend', itemHtml);
-    const uploadItem = document.getElementById(`upload-${uploadId}`);
-    
-    try {
-        // Extract metadata
-        const metadata = await extractMetadata(file);
-        updateUploadMeta(uploadId, 'Uploading audio...');
-        
-        // Upload audio
-        const audioUrl = await uploadFile(file, uploadId, 'audio');
-        updateUploadMeta(uploadId, 'Uploading complete!');
-        
-        // Upload cover if embedded
-        let coverUrl = metadata.coverUrl;
-        if (metadata.coverBlob) {
-            updateUploadMeta(uploadId, 'Uploading cover...');
-            coverUrl = await uploadFile(metadata.coverBlob, uploadId, 'cover');
-        }
-        
-        // Save to database
-        const songData = {
-            title: metadata.title || file.name.replace(/\.[^/.]+$/, ''),
-            artist: metadata.artist || 'Unknown Artist',
-            album: metadata.album || '',
-            year: metadata.year || new Date().getFullYear(),
-            genre: metadata.genre || '',
-            duration: metadata.duration || 0,
-            audioUrl,
-            coverUrl: coverUrl || 'https://via.placeholder.com/400?text=♪',
-            moods: [],
-            activities: [],
-            addedAt: Date.now(),
-            addedBy: AdminState.currentAdmin.email,
-            playCount: 0,
-            cloudinaryId: audioUrl.split('/').pop().split('.')[0]
-        };
-        
-        await database.ref('songs').push(songData);
-        
-        // Success
-        uploadItem.querySelector('.upload-item-icon').textContent = '✅';
-        uploadItem.querySelector('.upload-item-meta').textContent = 'Upload complete!';
-        uploadItem.querySelector('.progress-fill').style.width = '100%';
-        uploadItem.querySelector('.progress-text').textContent = '100%';
-        
-        setTimeout(() => uploadItem.remove(), 2000);
-        showToast('Song uploaded successfully!', 'success');
-        
-    } catch (error) {
-        console.error('Upload error:', error);
-        uploadItem.querySelector('.upload-item-icon').textContent = '❌';
-        uploadItem.querySelector('.upload-item-meta').textContent = `Error: ${error.message}`;
-        showToast(`Upload failed: ${file.name}`, 'error');
-    }
-}
-
-async function extractMetadata(file) {
-    return new Promise((resolve) => {
-        jsmediatags.read(file, {
-            onSuccess: (tag) => {
-                const tags = tag.tags;
-                const metadata = {
-                    title: tags.title,
-                    artist: tags.artist,
-                    album: tags.album,
-                    year: tags.year,
-                    genre: tags.genre,
-                    duration: 0,
-                    coverUrl: null,
-                    coverBlob: null
-                };
-                
-                // Extract cover art
-                if (tags.picture) {
-                    const picture = tags.picture;
-                    const blob = new Blob([new Uint8Array(picture.data)], { type: picture.format });
-                    metadata.coverBlob = blob;
-                    metadata.coverUrl = URL.createObjectURL(blob);
-                }
-                
-                // Get duration
-                const audio = new Audio();
-                audio.addEventListener('loadedmetadata', () => {
-                    metadata.duration = audio.duration;
-                    resolve(metadata);
-                });
-                audio.src = URL.createObjectURL(file);
-                
-            },
-            onError: () => {
-                // No metadata found, resolve with defaults
-                resolve({
-                    title: null,
-                    artist: null,
-                    album: null,
-                    year: null,
-                    genre: null,
-                    duration: 0,
-                    coverUrl: null,
-                    coverBlob: null
-                });
-            }
-        });
-    });
-}
-
-async function uploadFile(file, uploadId, type) {
-    return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-        formData.append('folder', type === 'cover' ? 'aurio/covers' : 'aurio/audio');
-        
-        const xhr = new XMLHttpRequest();
-        
-        xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable) {
-                const percent = (e.loaded / e.total) * 100;
-                updateUploadProgress(uploadId, percent);
-            }
-        });
-        
-        xhr.addEventListener('load', () => {
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                resolve(response.secure_url);
-            } else {
-                reject(new Error('Upload failed'));
-            }
-        });
-        
-        xhr.addEventListener('error', () => reject(new Error('Network error')));
-        
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/auto/upload`);
-        xhr.send(formData);
-    });
-}
-
-function updateUploadProgress(uploadId, percent) {
-    const item = document.getElementById(`upload-${uploadId}`);
-    if (!item) return;
-    
-    const fill = item.querySelector('.progress-fill');
-    const text = item.querySelector('.progress-text');
-    
-    if (fill) fill.style.width = `${percent}%`;
-    if (text) text.textContent = `${Math.round(percent)}%`;
-}
-
-function updateUploadMeta(uploadId, message) {
-    const item = document.getElementById(`upload-${uploadId}`);
-    if (!item) return;
-    
-    const meta = item.querySelector('.upload-item-meta');
-    if (meta) meta.textContent = message;
-}
-
-// ==================== EDIT SONG ====================
-window.editSong = function(songId) {
-    const song = AdminState.allSongs.find(s => s.id === songId);
+// Open Edit Modal
+window.openEditModal = function(songId) {
+    const song = allSongs.find(s => s.id === songId);
     if (!song) return;
     
-    AdminState.editingSong = { id: songId, ...song };
+    currentEditSongId = songId;
     
-    // Populate form
-    DOM.editTitle.value = song.title || '';
-    DOM.editArtist.value = song.artist || '';
-    DOM.editAlbum.value = song.album || '';
-    DOM.editYear.value = song.year || '';
-    DOM.editGenre.value = song.genre || '';
-    DOM.editCoverUrl.value = song.coverUrl || '';
+    editTitle.value = song.title;
+    editArtist.value = song.artist;
+    editAlbum.value = song.album || '';
+    editLanguage.value = song.language || 'English';
+    editArtistImage.value = song.artistImage || '';
+    editPlayCount.textContent = song.playCount || 0;
+    editLikes.textContent = song.likes || 0;
     
-    // Mood tags
-    DOM.moodTags.querySelectorAll('input').forEach(input => {
-        input.checked = (song.moods || []).includes(input.value);
-    });
-    
-    // Activity tags
-    DOM.activityTags.querySelectorAll('input').forEach(input => {
-        input.checked = (song.activities || []).includes(input.value);
-    });
-    
-    // Cover preview
-    if (song.coverUrl) {
-        DOM.coverPreview.innerHTML = `<img src="${song.coverUrl}" alt="Cover">`;
-    }
-    
-    DOM.editModal.style.display = 'flex';
+    editSongModal.classList.add('active');
 };
 
-function saveEditedSong(e) {
+// Close Edit Modal
+window.closeEditModal = function() {
+    editSongModal.classList.remove('active');
+    currentEditSongId = null;
+};
+
+// Handle Song Update
+async function handleSongUpdate(e) {
     e.preventDefault();
     
-    const moods = Array.from(DOM.moodTags.querySelectorAll('input:checked')).map(i => i.value);
-    const activities = Array.from(DOM.activityTags.querySelectorAll('input:checked')).map(i => i.value);
+    if (!currentEditSongId) return;
     
-    const updates = {
-        title: DOM.editTitle.value.trim(),
-        artist: DOM.editArtist.value.trim(),
-        album: DOM.editAlbum.value.trim(),
-        year: parseInt(DOM.editYear.value) || null,
-        genre: DOM.editGenre.value.trim(),
-        coverUrl: DOM.editCoverUrl.value.trim(),
-        moods,
-        activities
-    };
+    showLoading();
     
-    database.ref(`songs/${AdminState.editingSong.id}`).update(updates)
-        .then(() => {
-            showToast('Song updated!', 'success');
-            DOM.editModal.style.display = 'none';
-            AdminState.editingSong = null;
-        })
-        .catch(error => {
-            console.error('Update error:', error);
-            showToast('Update failed', 'error');
-        });
+    try {
+        const updateData = {
+            title: editTitle.value.trim(),
+            artist: editArtist.value.trim(),
+            album: editAlbum.value.trim() || null,
+            language: editLanguage.value,
+            artistImage: editArtistImage.value.trim() || null
+        };
+        
+        await firebaseAuth.db.collection('songs').doc(currentEditSongId).update(updateData);
+        
+        showToast('Song updated successfully');
+        closeEditModal();
+        await loadAllSongs();
+        
+    } catch (error) {
+        console.error('Update error:', error);
+        showToast('Update failed');
+    } finally {
+        hideLoading();
+    }
 }
 
-// ==================== DELETE SONG ====================
-window.deleteSong = function(songId, title) {
-    if (!confirm(`Delete "${title}"?\n\nThis cannot be undone.`)) return;
+// Delete Song
+window.deleteSong = async function() {
+    if (!currentEditSongId) return;
     
-    database.ref(`songs/${songId}`).remove()
-        .then(() => {
-            showToast('Song deleted', 'success');
-        })
-        .catch(error => {
-            console.error('Delete error:', error);
-            showToast('Delete failed', 'error');
-        });
+    if (!confirm('Are you sure you want to delete this song? This action cannot be undone.')) {
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        await firebaseAuth.db.collection('songs').doc(currentEditSongId).delete();
+        
+        showToast('Song deleted successfully');
+        closeEditModal();
+        await loadAllSongs();
+        
+    } catch (error) {
+        console.error('Delete error:', error);
+        showToast('Delete failed');
+    } finally {
+        hideLoading();
+    }
 };
 
-// ==================== STATS ====================
-function updateStats() {
-    DOM.statTotalSongs.textContent = AdminState.allSongs.length;
-    
-    let totalPlays = 0;
-    AdminState.allSongs.forEach(s => {
-        totalPlays += s.playCount || 0;
-    });
-    DOM.statTotalPlays.textContent = totalPlays;
-    
-    // Storage calculation (rough estimate)
-    const avgSongSize = 5; // MB
-    const totalStorage = AdminState.allSongs.length * avgSongSize;
-    DOM.statStorage.textContent = `${totalStorage} MB`;
+// Load Playlists
+async function loadPlaylists() {
+    try {
+        const playlists = await firebaseDB.getPlaylists();
+        renderPlaylistsList(playlists);
+    } catch (error) {
+        console.error('Error loading playlists:', error);
+    }
 }
 
-// ==================== UTILITIES ====================
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+// Render Playlists List
+function renderPlaylistsList(playlists) {
+    if (playlists.length === 0) {
+        playlistsList.innerHTML = '<p style="color: var(--text-secondary); padding: 20px;">No playlists created yet</p>';
+        return;
+    }
+    
+    playlistsList.innerHTML = playlists.map(playlist => `
+        <div class="playlist-card">
+            <img src="${playlist.coverUrl || 'https://via.placeholder.com/200'}" alt="${playlist.name}" class="playlist-cover-img">
+            <div class="playlist-name">${playlist.name}</div>
+            <div class="playlist-count">${(playlist.songs || []).length} songs</div>
+        </div>
+    `).join('');
+}
+
+// Close Create Playlist Modal
+window.closeCreatePlaylistModal = function() {
+    createPlaylistModal.classList.remove('active');
+    createPlaylistForm.reset();
+};
+
+// Handle Playlist Create
+async function handlePlaylistCreate(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('playlistName').value.trim();
+    const description = document.getElementById('playlistDescription').value.trim();
+    const coverUrl = document.getElementById('playlistCover').value.trim();
+    const isPublic = document.getElementById('playlistPublic').checked;
+    
+    if (!name) {
+        showToast('Please enter playlist name');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const playlistData = {
+            name,
+            description: description || null,
+            coverUrl: coverUrl || 'https://via.placeholder.com/300',
+            isPublic,
+            songs: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: currentUser.uid
+        };
+        
+        await firebaseAuth.db.collection('playlists').add(playlistData);
+        
+        showToast('Playlist created successfully');
+        closeCreatePlaylistModal();
+        await loadPlaylists();
+        
+    } catch (error) {
+        console.error('Create playlist error:', error);
+        showToast('Failed to create playlist');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Utility Functions
+function showLoading() {
+    loadingSpinner.style.display = 'flex';
+}
+
+function hideLoading() {
+    loadingSpinner.style.display = 'none';
+}
+
+function showToast(message) {
     toast.textContent = message;
-    DOM.toastContainer.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
-
-function formatDate(timestamp) {
-    if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function formatDuration(seconds) {
-    if (!seconds) return '';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-// ==================== EVENT LISTENERS ====================
-function setupEventListeners() {
-    // Auth
-    DOM.signInBtn.addEventListener('click', adminSignIn);
-    DOM.signOutBtn.addEventListener('click', adminSignOut);
-    
-    // Upload area
-    DOM.uploadArea.addEventListener('click', () => DOM.fileInput.click());
-    DOM.fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files));
-    
-    // Drag & drop
-    DOM.uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        DOM.uploadArea.classList.add('dragging');
-    });
-    
-    DOM.uploadArea.addEventListener('dragleave', () => {
-        DOM.uploadArea.classList.remove('dragging');
-    });
-    
-    DOM.uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        DOM.uploadArea.classList.remove('dragging');
-        handleFileSelect(e.dataTransfer.files);
-    });
-    
-    // Search & sort
-    DOM.adminSearch.addEventListener('input', renderSongs);
-    DOM.adminSort.addEventListener('change', renderSongs);
-    
-    // Edit modal
-    DOM.editForm.addEventListener('submit', saveEditedSong);
-    DOM.closeEditModal.addEventListener('click', () => {
-        DOM.editModal.style.display = 'none';
-    });
-    DOM.cancelEdit.addEventListener('click', () => {
-        DOM.editModal.style.display = 'none';
-    });
-    
-    // Cover preview
-    DOM.editCoverUrl.addEventListener('input', (e) => {
-        const url = e.target.value.trim();
-        if (url) {
-            DOM.coverPreview.innerHTML = `<img src="${url}" alt="Cover" onerror="this.src='https://via.placeholder.com/200?text=Invalid'">`;
-        } else {
-            DOM.coverPreview.innerHTML = '';
-        }
-    });
-}
-
-// ==================== START ====================
-init();
