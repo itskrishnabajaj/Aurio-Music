@@ -1,6 +1,6 @@
-// Aurio Service Worker - v2.0
-const CACHE_NAME = 'aurio-v2';
-const RUNTIME_CACHE = 'aurio-runtime-v2';
+// Aurio Service Worker - v2.1 (Auth Fix)
+const CACHE_NAME = 'aurio-v2.1';
+const RUNTIME_CACHE = 'aurio-runtime-v2.1';
 
 // Files to cache immediately on install
 const STATIC_CACHE_URLS = [
@@ -10,6 +10,8 @@ const STATIC_CACHE_URLS = [
   '/app.js',
   '/firebase.js',
   '/cloudinary.js',
+  '/auth-module.js',
+  '/auth-styles.css',
   '/manifest.json',
   '/admin.html',
   '/admin.css',
@@ -51,20 +53,28 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip cross-origin requests
+  // Skip cross-origin requests except Firebase and Cloudinary
   if (url.origin !== location.origin && 
       !url.origin.includes('firebase') && 
-      !url.origin.includes('cloudinary')) {
+      !url.origin.includes('cloudinary') &&
+      !url.origin.includes('googleapis')) {
     return;
   }
 
-  // Network first for API calls
+  // CRITICAL: Never cache Firebase Auth requests
+  // This prevents login loop issues on mobile
   if (url.pathname.includes('firebasedatabase') || 
-      url.pathname.includes('googleapis')) {
-    event.respondWith(
-      fetch(request)
-        .catch(() => caches.match(request))
-    );
+      url.pathname.includes('googleapis') ||
+      url.pathname.includes('identitytoolkit') ||
+      url.pathname.includes('securetoken') ||
+      url.pathname.includes('identitytoolkit.googleapis.com') ||
+      url.pathname.includes('securetoken.googleapis.com') ||
+      url.href.includes('firebaseapp.com/__/auth') ||
+      url.href.includes('accounts.google.com') ||
+      url.href.includes('www.googleapis.com/identitytoolkit') ||
+      url.href.includes('www.googleapis.com/securetoken')) {
+    // Always fetch from network, never cache
+    event.respondWith(fetch(request));
     return;
   }
 
@@ -90,7 +100,7 @@ self.addEventListener('fetch', event => {
           // Fallback for images
           if (request.destination === 'image') {
             return new Response(
-              '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#333"/></svg>',
+              '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#333"/><text x="50" y="55" font-size="40" text-anchor="middle" fill="#666">♪</text></svg>',
               { headers: { 'Content-Type': 'image/svg+xml' } }
             );
           }
@@ -130,9 +140,8 @@ self.addEventListener('sync', event => {
 });
 
 async function syncPlayCounts() {
-  // This would sync any offline play counts
-  // For now, just log
   console.log('🔄 Syncing play counts...');
+  // Implement play count syncing logic
 }
 
 // Handle messages from clients
@@ -147,4 +156,43 @@ self.addEventListener('message', event => {
       cache.add(url);
     });
   }
+  
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+    }).then(() => {
+      event.ports[0].postMessage({ status: 'Cache cleared' });
+    });
+  }
+});
+
+// Push notifications (for future features)
+self.addEventListener('push', event => {
+  if (event.data) {
+    const data = event.data.json();
+    const options = {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [200, 100, 200],
+      data: {
+        url: data.url || '/'
+      }
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification(data.title, options)
+    );
+  }
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.openWindow(event.notification.data.url)
+  );
 });

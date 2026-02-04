@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#6C5CE7">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="description" content="Premium music streaming experience by KrisVeltrix">
@@ -23,12 +24,133 @@
             </div>
             <h1 class="auth-title">Aurio</h1>
             <p class="auth-tagline">Your music, everywhere</p>
-            <button id="googleSignIn" class="btn-primary">
-                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-                Sign in with Google
-            </button>
+            
+            <!-- Auth Methods Selection -->
+            <div class="auth-methods" id="authMethods">
+                <button id="googleSignIn" class="auth-method-btn google">
+                    <svg width="20" height="20" viewBox="0 0 18 18">
+                        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                        <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+                        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </button>
+
+                <button id="emailSignIn" class="auth-method-btn email">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    <span>Continue with Email</span>
+                </button>
+
+                <button id="phoneSignIn" class="auth-method-btn phone">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    <span>Continue with Phone</span>
+                </button>
+            </div>
+
+            <!-- Email/Password Form (Hidden by default) -->
+            <div class="auth-form hidden" id="emailAuthForm">
+                <button class="back-btn" id="backToMethods">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"/>
+                        <polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    Back
+                </button>
+                
+                <h2 class="form-title" id="formTitle">Sign In</h2>
+                
+                <div class="input-group">
+                    <label for="emailInput">Email</label>
+                    <input type="email" id="emailInput" placeholder="your@email.com" autocomplete="email" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="passwordInput">Password</label>
+                    <div class="password-field">
+                        <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password" required>
+                        <button type="button" class="toggle-password" id="togglePassword">
+                            <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg id="eyeOffIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <button class="btn-primary full-width" id="emailSubmitBtn">Sign In</button>
+                
+                <div class="form-footer">
+                    <button class="link-btn" id="forgotPasswordBtn">Forgot password?</button>
+                    <button class="link-btn" id="toggleSignUpBtn">Don't have an account? <strong>Sign Up</strong></button>
+                </div>
+            </div>
+
+            <!-- Phone Auth Form (Hidden by default) -->
+            <div class="auth-form hidden" id="phoneAuthForm">
+                <button class="back-btn" id="backToMethodsPhone">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"/>
+                        <polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    Back
+                </button>
+                
+                <h2 class="form-title">Phone Sign In</h2>
+                
+                <div id="phoneStep1">
+                    <div class="input-group">
+                        <label for="phoneInput">Phone Number</label>
+                        <div class="phone-input-wrapper">
+                            <select id="countryCode" class="country-code">
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+91" selected>🇮🇳 +91</option>
+                                <option value="+61">🇦🇺 +61</option>
+                                <option value="+86">🇨🇳 +86</option>
+                                <option value="+81">🇯🇵 +81</option>
+                                <option value="+82">🇰🇷 +82</option>
+                                <option value="+49">🇩🇪 +49</option>
+                                <option value="+33">🇫🇷 +33</option>
+                                <option value="+39">🇮🇹 +39</option>
+                            </select>
+                            <input type="tel" id="phoneInput" placeholder="9876543210" required>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-primary full-width" id="sendOtpBtn">Send OTP</button>
+                </div>
+                
+                <div id="phoneStep2" class="hidden">
+                    <p class="info-text">Enter the 6-digit code sent to <strong id="phoneNumber"></strong></p>
+                    
+                    <div class="input-group">
+                        <label for="otpInput">Verification Code</label>
+                        <input type="text" id="otpInput" placeholder="123456" maxlength="6" inputmode="numeric" required>
+                    </div>
+                    
+                    <button class="btn-primary full-width" id="verifyOtpBtn">Verify & Sign In</button>
+                    
+                    <div class="form-footer">
+                        <button class="link-btn" id="resendOtpBtn">Didn't receive code? <strong>Resend</strong></button>
+                    </div>
+                </div>
+            </div>
+
             <p class="auth-footer">By KrisVeltrix</p>
         </div>
+        
+        <!-- reCAPTCHA container (invisible) -->
+        <div id="recaptcha-container"></div>
     </div>
 
     <!-- Main App Screen -->
@@ -316,6 +438,12 @@
 
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p class="loading-text">Processing...</p>
+    </div>
 
     <!-- External Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
