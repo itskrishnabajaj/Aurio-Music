@@ -3,322 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#121212">
-    <title>Aurio - Music Streaming</title>
-    <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="/style.css">
-    <link rel="icon" type="image/png" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Aurio Music</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png">
 </head>
 <body>
-    <!-- Auth Screen -->
+    <!-- AUTH SCREEN (FIRST RENDER) -->
     <div id="authScreen" class="screen active">
         <div class="auth-container">
             <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio" class="auth-logo">
-            <h1 class="auth-title">Welcome to Aurio</h1>
-            <p class="auth-subtitle">Your music, your way</p>
+            <h1>Aurio Music</h1>
             
-            <div class="auth-buttons">
-                <button id="googleSignInBtn" class="auth-btn google-btn">
-                    <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                    Continue with Google
-                </button>
-                
-                <button id="phoneSignInBtn" class="auth-btn phone-btn">
-                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
-                    Continue with Phone
-                </button>
-                
-                <button id="guestSignInBtn" class="auth-btn guest-btn">
-                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/></svg>
-                    Continue as Guest
-                </button>
+            <div id="authToggle" class="auth-toggle">
+                <button id="showSignIn" class="active">Sign In</button>
+                <button id="showSignUp">Sign Up</button>
             </div>
-            
-            <!-- Phone Auth Modal -->
-            <div id="phoneAuthModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>Phone Sign In</h3>
-                        <button id="closePhoneModal" class="close-btn">&times;</button>
-                    </div>
-                    <div id="phoneStep1" class="phone-step active">
-                        <p class="modal-desc">Enter your phone number</p>
-                        <div class="phone-input-group">
-                            <select id="countryCode" class="country-code">
-                                <option value="+1">+1 (US)</option>
-                                <option value="+91" selected>+91 (IN)</option>
-                                <option value="+44">+44 (UK)</option>
-                                <option value="+61">+61 (AU)</option>
-                                <option value="+81">+81 (JP)</option>
-                            </select>
-                            <input type="tel" id="phoneNumber" placeholder="Phone number" class="phone-input">
-                        </div>
-                        <div id="recaptcha-container"></div>
-                        <button id="sendOtpBtn" class="modal-btn">Send OTP</button>
-                    </div>
-                    <div id="phoneStep2" class="phone-step">
-                        <p class="modal-desc">Enter the 6-digit code</p>
-                        <input type="text" id="otpCode" placeholder="000000" maxlength="6" class="otp-input">
-                        <button id="verifyOtpBtn" class="modal-btn">Verify & Sign In</button>
-                        <button id="resendOtpBtn" class="modal-btn-secondary">Resend Code</button>
-                    </div>
-                </div>
+
+            <form id="signInForm" class="auth-form active">
+                <input type="text" id="signInUsername" placeholder="Username" required autocomplete="username">
+                <input type="password" id="signInPassword" placeholder="Password" required autocomplete="current-password">
+                <button type="submit">Sign In</button>
+                <div id="signInError" class="error-message"></div>
+            </form>
+
+            <form id="signUpForm" class="auth-form">
+                <input type="text" id="signUpUsername" placeholder="Username" required autocomplete="username">
+                <input type="password" id="signUpPassword" placeholder="Password" required autocomplete="new-password">
+                <input type="password" id="signUpConfirm" placeholder="Confirm Password" required autocomplete="new-password">
+                <button type="submit">Sign Up</button>
+                <div id="signUpError" class="error-message"></div>
+            </form>
+
+            <div id="pendingApproval" class="pending-message" style="display:none;">
+                <p>⏳ Waiting for admin approval</p>
+                <button id="logoutPending">Logout</button>
             </div>
         </div>
     </div>
 
-    <!-- Main App Screen -->
+    <!-- MAIN APP (ONLY SHOWN WHEN AUTHENTICATED) -->
     <div id="appScreen" class="screen">
-        <!-- Header -->
-        <header class="app-header">
-            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio" class="header-logo">
-            <div class="header-actions">
-                <button id="searchBtn" class="icon-btn">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-                </button>
-                <button id="profileBtn" class="icon-btn">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/></svg>
-                </button>
-            </div>
+        <!-- TOP BAR -->
+        <header class="top-bar">
+            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio" class="top-logo">
+            <span id="greetingText"></span>
         </header>
 
-        <!-- Main Content -->
-        <main id="mainContent" class="main-content">
-            <!-- Home Section -->
-            <section id="homeSection" class="content-section active">
-                <div class="greeting">
-                    <h2 id="greetingText">Good evening</h2>
-                </div>
+        <!-- CONTENT AREA -->
+        <main id="mainContent">
+            <!-- HOME SCREEN -->
+            <div id="homeView" class="view active">
+                <section class="content-section">
+                    <h2>Recently Played</h2>
+                    <div id="recentlyPlayed" class="song-grid"></div>
+                </section>
 
-                <!-- Recently Played -->
-                <div class="section-block" id="recentlyPlayedBlock" style="display: none;">
-                    <h3 class="section-title">Recently Played</h3>
-                    <div class="horizontal-scroll" id="recentlyPlayedList"></div>
-                </div>
+                <section class="content-section">
+                    <h2 id="aiSectionTitle">For You</h2>
+                    <div id="aiRecommendations" class="song-grid"></div>
+                </section>
 
-                <!-- Daily Mix -->
-                <div class="section-block">
-                    <h3 class="section-title">Daily Mix</h3>
-                    <div class="horizontal-scroll" id="dailyMixList"></div>
-                </div>
+                <section class="content-section">
+                    <h2>Old Is Gold</h2>
+                    <div id="oldIsGold" class="song-grid"></div>
+                </section>
 
-                <!-- Favorite Artists -->
-                <div class="section-block" id="favoriteArtistsBlock" style="display: none;">
-                    <h3 class="section-title">Your Favorite Artists</h3>
-                    <div class="horizontal-scroll artist-scroll" id="favoriteArtistsList"></div>
-                </div>
+                <section class="content-section">
+                    <h2>Most Played</h2>
+                    <div id="mostPlayed" class="song-grid"></div>
+                </section>
 
-                <!-- Recommended -->
-                <div class="section-block">
-                    <h3 class="section-title">Recommended for You</h3>
-                    <div class="horizontal-scroll" id="recommendedList"></div>
-                </div>
+                <section class="content-section">
+                    <h2>Artists</h2>
+                    <div id="artistsList" class="artists-grid"></div>
+                </section>
 
-                <!-- Playlists -->
-                <div class="section-block">
-                    <h3 class="section-title">Popular Playlists</h3>
-                    <div class="horizontal-scroll" id="playlistsList"></div>
-                </div>
-            </section>
+                <section class="content-section">
+                    <h2>Playlists</h2>
+                    <div id="homePlaylistsList" class="song-grid"></div>
+                </section>
+            </div>
 
-            <!-- Search Section -->
-            <section id="searchSection" class="content-section">
+            <!-- LIBRARY SCREEN -->
+            <div id="libraryView" class="view">
+                <h2>All Songs</h2>
+                <div id="allSongsList" class="song-list"></div>
+            </div>
+
+            <!-- SEARCH SCREEN -->
+            <div id="searchView" class="view">
                 <div class="search-container">
-                    <div class="search-box">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-                        <input type="text" id="searchInput" placeholder="Search songs, artists, albums...">
-                        <button id="clearSearchBtn" class="clear-btn" style="display: none;">&times;</button>
-                    </div>
-                    <div id="searchResults" class="search-results"></div>
+                    <input type="text" id="searchInput" placeholder="Search songs, artists..." autocomplete="off">
                 </div>
-            </section>
+                <div id="searchResults" class="song-list"></div>
+            </div>
 
-            <!-- Profile Section -->
-            <section id="profileSection" class="content-section">
-                <div class="profile-container">
-                    <div class="profile-header">
-                        <div id="profileAvatar" class="profile-avatar"></div>
-                        <h2 id="profileName">User</h2>
-                        <button id="editProfileBtn" class="edit-btn">Edit Profile</button>
-                    </div>
-                    
-                    <div class="profile-stats">
-                        <div class="stat-item">
-                            <div class="stat-value" id="totalPlaysCount">0</div>
-                            <div class="stat-label">Total Plays</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="likedSongsCount">0</div>
-                            <div class="stat-label">Liked Songs</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="playlistsCount">0</div>
-                            <div class="stat-label">Playlists</div>
-                        </div>
-                    </div>
-
-                    <div class="profile-section-block">
-                        <h3>Your Library</h3>
-                        <div class="library-items">
-                            <div class="library-item" id="likedSongsItem">
-                                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/></svg>
-                                <span>Liked Songs</span>
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
-                            </div>
-                            <div class="library-item" id="myPlaylistsItem">
-                                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M12 13c0 1.105-1.12 2-2.5 2S7 14.105 7 13s1.12-2 2.5-2 2.5.895 2.5 2z"/><path fill-rule="evenodd" d="M12 3v10h-1V3h1z"/><path d="M11 2.82a1 1 0 0 1 .804-.98l3-.6A1 1 0 0 1 16 2.22V4l-5 1V2.82z"/></svg>
-                                <span>My Playlists</span>
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button id="signOutBtn" class="sign-out-btn">Sign Out</button>
+            <!-- PROFILE SCREEN -->
+            <div id="profileView" class="view">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar"></div>
+                    <h2 id="profileUsername"></h2>
                 </div>
 
-                <!-- Edit Profile Modal -->
-                <div id="editProfileModal" class="modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3>Edit Profile</h3>
-                            <button id="closeEditModal" class="close-btn">&times;</button>
-                        </div>
-                        <div class="edit-form">
-                            <label>Display Name</label>
-                            <input type="text" id="editProfileName" placeholder="Enter your name">
-                            
-                            <label>Choose Avatar</label>
-                            <div class="avatar-grid" id="avatarGrid"></div>
-                            
-                            <button id="saveProfileBtn" class="modal-btn">Save Changes</button>
-                        </div>
+                <div class="profile-section">
+                    <h3>Liked Songs</h3>
+                    <div id="likedSongsList" class="song-list"></div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Playlists</h3>
+                    <div id="playlistsList"></div>
+                </div>
+
+                <button id="changePasswordBtn" class="profile-btn">Change Password</button>
+                <button id="logoutBtn" class="profile-btn logout">Logout</button>
+            </div>
+
+            <!-- ARTIST DETAIL SCREEN -->
+            <div id="artistView" class="view">
+                <button id="backFromArtist" class="back-btn">← Back</button>
+                <div class="artist-detail-header">
+                    <img id="artistCover" class="artist-detail-cover" src="" alt="">
+                    <div class="artist-detail-info">
+                        <h2 id="artistName"></h2>
+                        <p id="artistBio" class="artist-bio"></p>
+                        <div id="artistGenres" class="artist-genres"></div>
+                        <div id="artistStats" class="artist-stats"></div>
                     </div>
                 </div>
-            </section>
+                <h3 style="margin: 20px 0 15px 0;">Songs</h3>
+                <div id="artistSongs" class="song-list"></div>
+            </div>
         </main>
 
-        <!-- Bottom Navigation -->
+        <!-- MINIMIZED PLAYER -->
+        <div id="miniPlayer" class="mini-player" style="display:none;">
+            <img id="miniCover" src="" alt="">
+            <div class="mini-info">
+                <div id="miniTitle"></div>
+                <div id="miniArtist"></div>
+            </div>
+            <div class="mini-controls">
+                <button id="miniPrev">⏮</button>
+                <button id="miniPlayPause">▶</button>
+                <button id="miniNext">⏭</button>
+            </div>
+        </div>
+
+        <!-- FULL PLAYER -->
+        <div id="fullPlayer" class="full-player">
+            <button id="closePlayer" class="close-player">✕</button>
+            <img id="playerCover" src="" alt="">
+            <div class="player-info">
+                <h3 id="playerTitle"></h3>
+                <p id="playerArtist"></p>
+            </div>
+            <div class="player-progress">
+                <span id="currentTime">0:00</span>
+                <input type="range" id="progressBar" min="0" max="100" value="0">
+                <span id="totalTime">0:00</span>
+            </div>
+            <div class="player-controls">
+                <button id="shuffleBtn" class="control-btn">🔀</button>
+                <button id="prevBtn" class="control-btn">⏮</button>
+                <button id="playPauseBtn" class="control-btn main">▶</button>
+                <button id="nextBtn" class="control-btn">⏭</button>
+                <button id="repeatBtn" class="control-btn">🔁</button>
+            </div>
+            <div class="player-volume">
+                <span>🔊</span>
+                <input type="range" id="volumeSlider" min="0" max="100" value="80">
+            </div>
+            <button id="likeBtn" class="like-btn">♡</button>
+        </div>
+
+        <!-- BOTTOM NAVIGATION -->
         <nav class="bottom-nav">
-            <button class="nav-btn active" data-section="home">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5ZM13 7.207V13.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V7.207l5-5 5 5Z"/></svg>
-                <span>Home</span>
+            <button data-view="homeView" class="nav-btn active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
             </button>
-            <button class="nav-btn" data-section="search">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-                <span>Search</span>
+            <button data-view="libraryView" class="nav-btn">
+                <span class="nav-icon">📚</span>
+                <span class="nav-label">Library</span>
             </button>
-            <button class="nav-btn" data-section="profile">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/></svg>
-                <span>Profile</span>
+            <button data-view="searchView" class="nav-btn">
+                <span class="nav-icon">🔍</span>
+                <span class="nav-label">Search</span>
+            </button>
+            <button data-view="profileView" class="nav-btn">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
             </button>
         </nav>
+    </div>
 
-        <!-- Player -->
-        <div id="player" class="player" style="display: none;">
-            <div class="player-progress">
-                <div id="playerProgressBar" class="player-progress-bar"></div>
-            </div>
-            <div class="player-content">
-                <div class="player-info" id="openPlayerDetails">
-                    <img id="playerCover" src="" alt="Cover" class="player-cover">
-                    <div class="player-text">
-                        <div id="playerTitle" class="player-title">Song Title</div>
-                        <div id="playerArtist" class="player-artist">Artist</div>
-                    </div>
-                    <button id="playerLikeBtn" class="player-action-btn">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"/></svg>
-                    </button>
-                </div>
-                <div class="player-controls">
-                    <button id="playerPrevBtn" class="player-control-btn">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.52-.302 1.233.043 1.233.696v7.384c0 .653-.713.998-1.233.696L5 8.752V12a.5.5 0 0 1-1 0V4z"/></svg>
-                    </button>
-                    <button id="playerPlayBtn" class="player-control-btn play-btn">
-                        <svg id="playIcon" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
-                        <svg id="pauseIcon" width="28" height="28" fill="currentColor" viewBox="0 0 16 16" style="display: none;"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/></svg>
-                    </button>
-                    <button id="playerNextBtn" class="player-control-btn">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.713 3.31 4 3.655 4 4.308v7.384c0 .653.713.998 1.233.696L11.5 8.752V12a.5.5 0 0 0 1 0V4z"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Full Player Modal -->
-        <div id="fullPlayerModal" class="full-player-modal">
-            <div class="full-player-header">
-                <button id="closeFullPlayer" class="icon-btn">
-                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
-                </button>
-                <div class="full-player-title">Now Playing</div>
-                <button class="icon-btn" style="opacity: 0; pointer-events: none;">
-                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg>
-                </button>
-            </div>
-            <div class="full-player-content">
-                <img id="fullPlayerCover" src="" alt="Cover" class="full-player-cover">
-                <div class="full-player-info">
-                    <h2 id="fullPlayerTitle">Song Title</h2>
-                    <p id="fullPlayerArtist">Artist</p>
-                </div>
-                <div class="full-player-progress-container">
-                    <span id="fullPlayerCurrentTime" class="time-label">0:00</span>
-                    <div class="full-player-progress">
-                        <input type="range" id="fullPlayerSeekBar" class="seek-bar" min="0" max="100" value="0">
-                        <div id="fullPlayerProgressFill" class="progress-fill"></div>
-                    </div>
-                    <span id="fullPlayerDuration" class="time-label">0:00</span>
-                </div>
-                <div class="full-player-controls">
-                    <button id="fullPlayerShuffleBtn" class="full-control-btn">
-                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/><path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/></svg>
-                    </button>
-                    <button id="fullPlayerPrevBtn" class="full-control-btn">
-                        <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.52-.302 1.233.043 1.233.696v7.384c0 .653-.713.998-1.233.696L5 8.752V12a.5.5 0 0 1-1 0V4z"/></svg>
-                    </button>
-                    <button id="fullPlayerPlayBtn" class="full-control-btn play-btn-large">
-                        <svg id="fullPlayIcon" width="36" height="36" fill="currentColor" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
-                        <svg id="fullPauseIcon" width="36" height="36" fill="currentColor" viewBox="0 0 16 16" style="display: none;"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/></svg>
-                    </button>
-                    <button id="fullPlayerNextBtn" class="full-control-btn">
-                        <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.713 3.31 4 3.655 4 4.308v7.384c0 .653.713.998 1.233.696L11.5 8.752V12a.5.5 0 0 0 1 0V4z"/></svg>
-                    </button>
-                    <button id="fullPlayerRepeatBtn" class="full-control-btn">
-                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M11 5.466V4H5a4 4 0 0 0-3.584 5.777.5.5 0 1 1-.896.446A5 5 0 0 1 5 3h6V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192Zm3.81.086a.5.5 0 0 1 .67.225A5 5 0 0 1 11 13H5v1.466a.25.25 0 0 1-.41.192l-2.36-1.966a.25.25 0 0 1 0-.384l2.36-1.966a.25.25 0 0 1 .41.192V12h6a4 4 0 0 0 3.585-5.777.5.5 0 0 1 .225-.67Z"/></svg>
-                    </button>
-                </div>
-                <div class="full-player-actions">
-                    <button id="fullPlayerLikeBtn" class="action-btn-large">
-                        <svg width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"/></svg>
-                    </button>
-                </div>
+    <!-- CHANGE PASSWORD MODAL -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <h3>Change Password</h3>
+            <input type="password" id="currentPassword" placeholder="Current Password">
+            <input type="password" id="newPassword" placeholder="New Password">
+            <input type="password" id="confirmNewPassword" placeholder="Confirm New Password">
+            <div id="passwordError" class="error-message"></div>
+            <div class="modal-buttons">
+                <button id="cancelPassword">Cancel</button>
+                <button id="savePassword">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
-        <div class="spinner"></div>
-    </div>
+    <audio id="audioPlayer"></audio>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
-
-    <!-- Audio Element -->
-    <audio id="audioPlayer" preload="metadata"></audio>
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="/firebase.js"></script>
-    <script src="/cloudinary.js"></script>
-    <script src="/app.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/serviceworker.js').catch(() => {});
-            });
-        }
-    </script>
+    <script src="firebase.js"></script>
+    <script src="cloudinary.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

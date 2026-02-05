@@ -2,251 +2,338 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#121212">
-    <title>Aurio Admin Panel</title>
-    <link rel="stylesheet" href="/admin.css">
-    <link rel="icon" type="image/png" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurio Admin</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="icon" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png">
 </head>
 <body>
-    <!-- Auth Check Screen -->
-    <div id="authCheckScreen" class="screen active">
-        <div class="auth-check-container">
-            <div class="spinner"></div>
-            <p>Verifying access...</p>
+    <!-- ADMIN LOGIN -->
+    <div id="adminLogin" class="screen active">
+        <div class="login-container">
+            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio" class="login-logo">
+            <h1>Aurio Admin</h1>
+            <form id="adminLoginForm">
+                <input type="password" id="adminPassword" placeholder="Admin Password" required autocomplete="current-password">
+                <button type="submit">Login</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
         </div>
     </div>
 
-    <!-- Admin Panel -->
+    <!-- ADMIN PANEL -->
     <div id="adminPanel" class="screen">
-        <!-- Header -->
         <header class="admin-header">
             <div class="header-left">
-                <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio" class="admin-logo">
-                <h1>Admin Panel</h1>
+                <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio">
+                <h1>Aurio Admin</h1>
             </div>
-            <button id="adminSignOutBtn" class="sign-out-btn">Sign Out</button>
+            <button id="adminLogout">Logout</button>
         </header>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="upload">Upload Songs</button>
-            <button class="tab-btn" data-tab="songs">Manage Songs</button>
-            <button class="tab-btn" data-tab="playlists">Playlists</button>
-        </div>
+        <nav class="admin-nav">
+            <button class="nav-item active" data-view="analytics">📊 Analytics</button>
+            <button class="nav-item" data-view="songs">🎵 Songs</button>
+            <button class="nav-item" data-view="upload">⬆️ Upload</button>
+            <button class="nav-item" data-view="artists">🎤 Artists</button>
+            <button class="nav-item" data-view="playlists">📝 Playlists</button>
+            <button class="nav-item" data-view="users">👥 Users</button>
+        </nav>
 
-        <!-- Tab Content -->
-        <div class="tab-content">
-            <!-- Upload Tab -->
-            <section id="uploadTab" class="tab-panel active">
-                <div class="upload-container">
-                    <h2>Upload New Song</h2>
-                    
-                    <!-- File Upload -->
-                    <div class="upload-section">
-                        <div class="file-upload-area" id="audioUploadArea">
-                            <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16"><path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/><path d="M13.991 3H2c-.26 0-.522.03-.76.082L8 3.5l6.991-.418A.97.97 0 0 0 13.991 3zM1 3.5a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 15 3.5v9a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 1 12.5v-9zM2.5 2A1.5 1.5 0 0 0 1 3.5v9A1.5 1.5 0 0 0 2.5 14h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 11.5 2h-9z"/></svg>
-                            <p>Click or drag audio file here</p>
-                            <p class="file-hint">Supported: MP3, WAV, M4A</p>
-                            <input type="file" id="audioFileInput" accept="audio/*" hidden>
-                        </div>
-                        <div id="audioFileName" class="file-name"></div>
+        <main class="admin-content">
+            <!-- ANALYTICS VIEW -->
+            <div id="analyticsView" class="view active">
+                <h2>Analytics Dashboard</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSongs">0</div>
+                        <div class="stat-label">Total Songs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeUsers">0</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalPlays">0</div>
+                        <div class="stat-label">Total Plays</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="storageUsed">0 MB</div>
+                        <div class="stat-label">Storage Used</div>
+                    </div>
+                </div>
+
+                <div class="analytics-section">
+                    <h3>Top 10 Most Played Songs</h3>
+                    <div id="topSongsList" class="top-songs-list"></div>
+                </div>
+            </div>
+
+            <!-- SONGS VIEW -->
+            <div id="songsView" class="view">
+                <div class="view-header">
+                    <h2>Song Management</h2>
+                    <input type="text" id="songSearchInput" placeholder="Search songs..." class="search-input">
+                </div>
+                <div id="songsList" class="songs-list"></div>
+            </div>
+
+            <!-- UPLOAD VIEW -->
+            <div id="uploadView" class="view">
+                <h2>Upload New Song</h2>
+                <form id="uploadForm" class="upload-form">
+                    <div class="form-group">
+                        <label>Audio File (MP3/M4A)</label>
+                        <input type="file" id="audioFile" accept="audio/mp3,audio/m4a,audio/mpeg" required>
                     </div>
 
-                    <div class="upload-section">
-                        <div class="file-upload-area" id="coverUploadArea">
-                            <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg>
-                            <p>Click or drag cover image here</p>
-                            <p class="file-hint">Supported: JPG, PNG</p>
-                            <input type="file" id="coverFileInput" accept="image/*" hidden>
-                        </div>
-                        <div id="coverFileName" class="file-name"></div>
-                        <div id="coverPreview" class="cover-preview"></div>
-                    </div>
-
-                    <!-- Metadata Form -->
-                    <form id="songMetadataForm" class="metadata-form">
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="songTitle">Song Title *</label>
+                            <label>Title</label>
                             <input type="text" id="songTitle" required>
                         </div>
-
                         <div class="form-group">
-                            <label for="songArtist">Artist *</label>
+                            <label>Artist</label>
                             <input type="text" id="songArtist" required>
                         </div>
+                    </div>
 
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="songAlbum">Album</label>
+                            <label>Album</label>
                             <input type="text" id="songAlbum">
                         </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="songLanguage">Language *</label>
-                                <select id="songLanguage" required>
-                                    <option value="">Select Language</option>
-                                    <option value="English">English</option>
-                                    <option value="Hindi">Hindi</option>
-                                    <option value="Punjabi">Punjabi</option>
-                                    <option value="Tamil">Tamil</option>
-                                    <option value="Telugu">Telugu</option>
-                                    <option value="Malayalam">Malayalam</option>
-                                    <option value="Kannada">Kannada</option>
-                                    <option value="Bengali">Bengali</option>
-                                    <option value="Marathi">Marathi</option>
-                                    <option value="Gujarati">Gujarati</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="songDuration">Duration</label>
-                                <input type="text" id="songDuration" readonly>
-                            </div>
-                        </div>
-
                         <div class="form-group">
-                            <label for="artistImage">Artist Image URL</label>
-                            <input type="url" id="artistImage" placeholder="https://...">
+                            <label>Year</label>
+                            <input type="number" id="songYear" min="1900" max="2100">
                         </div>
+                    </div>
 
-                        <div class="upload-progress" id="uploadProgress" style="display: none;">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill"></div>
-                            </div>
-                            <p id="uploadStatus">Uploading...</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Genre</label>
+                            <select id="songGenre">
+                                <option value="">Select Genre</option>
+                                <option value="pop">Pop</option>
+                                <option value="rock">Rock</option>
+                                <option value="hiphop">Hip Hop</option>
+                                <option value="electronic">Electronic</option>
+                                <option value="jazz">Jazz</option>
+                                <option value="classical">Classical</option>
+                                <option value="country">Country</option>
+                                <option value="rb">R&B</option>
+                                <option value="indie">Indie</option>
+                                <option value="other">Other</option>
+                            </select>
                         </div>
-
-                        <button type="submit" id="uploadSongBtn" class="btn-primary">Upload Song</button>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Songs Tab -->
-            <section id="songsTab" class="tab-panel">
-                <div class="songs-container">
-                    <div class="songs-header">
-                        <h2>All Songs</h2>
-                        <input type="text" id="searchSongs" placeholder="Search songs..." class="search-input">
+                        <div class="form-group">
+                            <label>Mood</label>
+                            <select id="songMood">
+                                <option value="">Select Mood</option>
+                                <option value="energetic">Energetic</option>
+                                <option value="calm">Calm</option>
+                                <option value="chill">Chill</option>
+                                <option value="happy">Happy</option>
+                                <option value="sad">Sad</option>
+                                <option value="romantic">Romantic</option>
+                            </select>
+                        </div>
                     </div>
-                    <div id="songsList" class="songs-list"></div>
-                </div>
-            </section>
 
-            <!-- Playlists Tab -->
-            <section id="playlistsTab" class="tab-panel">
-                <div class="playlists-container">
-                    <div class="playlists-header">
-                        <h2>Manage Playlists</h2>
-                        <button id="createPlaylistBtn" class="btn-primary">Create Playlist</button>
+                    <div class="form-group">
+                        <label>Cover Image (Optional)</label>
+                        <input type="file" id="coverFile" accept="image/*">
                     </div>
-                    <div id="playlistsList" class="playlists-list"></div>
+
+                    <div id="uploadProgress" class="upload-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <div id="uploadStatus" class="upload-status"></div>
+                    </div>
+
+                    <button type="submit" id="uploadBtn">Upload Song</button>
+                </form>
+            </div>
+
+            <!-- ARTISTS VIEW -->
+            <div id="artistsView" class="view">
+                <div class="view-header">
+                    <h2>Artist Management</h2>
+                    <input type="text" id="artistSearchInput" placeholder="Search artists..." class="search-input">
                 </div>
-            </section>
-        </div>
+                <div id="artistsAdminList" class="artists-admin-list"></div>
+            </div>
+
+            <!-- PLAYLISTS VIEW -->
+            <div id="playlistsView" class="view">
+                <div class="view-header">
+                    <h2>Playlists</h2>
+                    <button id="createPlaylistBtn" class="btn-primary">Create Playlist</button>
+                </div>
+                <div id="playlistsList" class="playlists-list"></div>
+            </div>
+
+            <!-- USERS VIEW -->
+            <div id="usersView" class="view">
+                <h2>User Management</h2>
+                <div id="usersList" class="users-list"></div>
+            </div>
+        </main>
     </div>
 
-    <!-- Edit Song Modal -->
+    <!-- EDIT SONG MODAL -->
     <div id="editSongModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Edit Song</h3>
-                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+                <button class="close-modal" onclick="closeEditSongModal()">✕</button>
             </div>
-            <form id="editSongForm" class="modal-form">
+            <form id="editSongForm">
+                <input type="hidden" id="editSongId">
+                
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" id="editTitle" required>
                 </div>
+
                 <div class="form-group">
                     <label>Artist</label>
                     <input type="text" id="editArtist" required>
                 </div>
+
                 <div class="form-group">
                     <label>Album</label>
                     <input type="text" id="editAlbum">
                 </div>
+
                 <div class="form-group">
-                    <label>Language</label>
-                    <select id="editLanguage">
-                        <option value="English">English</option>
-                        <option value="Hindi">Hindi</option>
-                        <option value="Punjabi">Punjabi</option>
-                        <option value="Tamil">Tamil</option>
-                        <option value="Telugu">Telugu</option>
-                        <option value="Malayalam">Malayalam</option>
-                        <option value="Kannada">Kannada</option>
-                        <option value="Bengali">Bengali</option>
-                        <option value="Marathi">Marathi</option>
-                        <option value="Gujarati">Gujarati</option>
+                    <label>Year</label>
+                    <input type="number" id="editYear">
+                </div>
+
+                <div class="form-group">
+                    <label>Genre</label>
+                    <select id="editGenre">
+                        <option value="">Select Genre</option>
+                        <option value="pop">Pop</option>
+                        <option value="rock">Rock</option>
+                        <option value="hiphop">Hip Hop</option>
+                        <option value="electronic">Electronic</option>
+                        <option value="jazz">Jazz</option>
+                        <option value="classical">Classical</option>
+                        <option value="country">Country</option>
+                        <option value="rb">R&B</option>
+                        <option value="indie">Indie</option>
+                        <option value="other">Other</option>
                     </select>
                 </div>
+
                 <div class="form-group">
-                    <label>Artist Image URL</label>
-                    <input type="url" id="editArtistImage">
+                    <label>Mood</label>
+                    <select id="editMood">
+                        <option value="">Select Mood</option>
+                        <option value="energetic">Energetic</option>
+                        <option value="calm">Calm</option>
+                        <option value="chill">Chill</option>
+                        <option value="happy">Happy</option>
+                        <option value="sad">Sad</option>
+                        <option value="romantic">Romantic</option>
+                    </select>
                 </div>
-                <div class="song-stats">
-                    <div class="stat-item">
-                        <span>Plays:</span>
-                        <strong id="editPlayCount">0</strong>
-                    </div>
-                    <div class="stat-item">
-                        <span>Likes:</span>
-                        <strong id="editLikes">0</strong>
-                    </div>
+
+                <div class="form-group">
+                    <label>New Cover Image (Optional)</label>
+                    <input type="file" id="editCoverFile" accept="image/*">
                 </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                    <button type="button" class="btn-danger" onclick="deleteSong()">Delete Song</button>
+
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeEditSongModal()">Cancel</button>
+                    <button type="submit">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Create Playlist Modal -->
+    <!-- EDIT ARTIST MODAL -->
+    <div id="editArtistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Artist Profile</h3>
+                <button class="close-modal" onclick="closeEditArtistModal()">✕</button>
+            </div>
+            <form id="editArtistForm">
+                <input type="hidden" id="editArtistName">
+                
+                <div class="form-group">
+                    <label>Artist Name</label>
+                    <input type="text" id="editArtistDisplayName" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label>Bio / Description</label>
+                    <textarea id="editArtistBio" rows="4" placeholder="Add artist biography..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Genres (comma separated)</label>
+                    <input type="text" id="editArtistGenres" placeholder="e.g., Pop, Rock, Electronic">
+                </div>
+
+                <div class="form-group">
+                    <label>Cover Photo</label>
+                    <input type="file" id="editArtistCover" accept="image/*">
+                    <div id="currentArtistCover" style="margin-top: 10px;"></div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeEditArtistModal()">Cancel</button>
+                    <button type="submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CREATE PLAYLIST MODAL -->
     <div id="createPlaylistModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Create Playlist</h3>
-                <button class="close-btn" onclick="closeCreatePlaylistModal()">&times;</button>
+                <button class="close-modal" onclick="closeCreatePlaylistModal()">✕</button>
             </div>
-            <form id="createPlaylistForm" class="modal-form">
+            <form id="createPlaylistForm">
                 <div class="form-group">
-                    <label>Playlist Name *</label>
+                    <label>Playlist Name</label>
                     <input type="text" id="playlistName" required>
                 </div>
+
                 <div class="form-group">
                     <label>Description</label>
                     <textarea id="playlistDescription" rows="3"></textarea>
                 </div>
+
                 <div class="form-group">
-                    <label>Cover Image URL</label>
-                    <input type="url" id="playlistCover" placeholder="https://...">
+                    <label>Cover Image (Optional)</label>
+                    <input type="file" id="playlistCoverFile" accept="image/*">
                 </div>
+
                 <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="playlistPublic" checked>
-                        Make playlist public
-                    </label>
+                    <label>Select Songs</label>
+                    <input type="text" id="playlistSongSearch" placeholder="Search songs..." class="search-input">
+                    <div id="playlistSongsList" class="playlist-songs-selector"></div>
                 </div>
-                <button type="submit" class="btn-primary">Create Playlist</button>
+
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeCreatePlaylistModal()">Cancel</button>
+                    <button type="submit">Create Playlist</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="loading-overlay" style="display: none;">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
-
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="/firebase.js"></script>
-    <script src="/cloudinary.js"></script>
-    <script src="/admin.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="cloudinary.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
