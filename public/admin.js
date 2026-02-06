@@ -258,10 +258,14 @@ function initUploadZone() {
 async function handleFilesUpload(files) {
     const queueContainer = document.getElementById('uploadQueue');
     
+    console.log(`Starting upload of ${files.length} file(s)`);
+    
     for (const file of files) {
         const uploadId = Date.now() + Math.random();
         const uploadItem = createUploadItem(uploadId, file);
         queueContainer.appendChild(uploadItem);
+        
+        console.log(`Processing file: ${file.name} (${file.type}, ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
         
         await processAndUploadFile(file, uploadId);
     }
@@ -316,26 +320,39 @@ async function processAndUploadFile(file, uploadId) {
             body: audioFormData
         });
         
+        if (!audioResponse.ok) {
+            throw new Error('Audio upload failed');
+        }
+        
         const audioData = await audioResponse.json();
-        progressBar.style.width = '60%';
+        progressBar.style.width = '50%';
         
         // Upload cover if available
-        let coverUrl = metadata.cover;
+        let coverUrl = '';
         
         if (metadata.coverBlob) {
-            statusEl.textContent = 'Uploading cover art...';
-            
-            const coverFormData = new FormData();
-            coverFormData.append('file', metadata.coverBlob);
-            coverFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-            
-            const coverResponse = await fetch(`${CLOUDINARY_URL}/image/upload`, {
-                method: 'POST',
-                body: coverFormData
-            });
-            
-            const coverData = await coverResponse.json();
-            coverUrl = coverData.secure_url;
+            try {
+                statusEl.textContent = 'Uploading cover art...';
+                
+                const coverFormData = new FormData();
+                coverFormData.append('file', metadata.coverBlob);
+                coverFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+                
+                const coverResponse = await fetch(`${CLOUDINARY_URL}/image/upload`, {
+                    method: 'POST',
+                    body: coverFormData
+                });
+                
+                if (coverResponse.ok) {
+                    const coverData = await coverResponse.json();
+                    coverUrl = coverData.secure_url;
+                }
+                progressBar.style.width = '80%';
+            } catch (coverError) {
+                console.warn('Cover upload failed, continuing without cover:', coverError);
+                progressBar.style.width = '80%';
+            }
+        } else {
             progressBar.style.width = '80%';
         }
         
@@ -348,9 +365,9 @@ async function processAndUploadFile(file, uploadId) {
             album: metadata.album || '',
             year: metadata.year || '',
             genre: metadata.genre || '',
-            mood: '', // Can be set later in edit
+            mood: '',
             url: audioData.secure_url,
-            cover: coverUrl || '',
+            cover: coverUrl,
             duration: audioData.duration || 0,
             uploadedAt: Date.now(),
             playCount: 0
@@ -368,7 +385,7 @@ async function processAndUploadFile(file, uploadId) {
         
     } catch (error) {
         console.error('Upload error:', error);
-        statusEl.textContent = 'Upload failed';
+        statusEl.textContent = `Upload failed: ${error.message}`;
         statusEl.classList.add('error');
     }
 }
@@ -381,7 +398,6 @@ function extractMetadata(file) {
             album: '',
             year: '',
             genre: '',
-            cover: '',
             coverBlob: null
         };
         
@@ -394,30 +410,25 @@ function extractMetadata(file) {
                     album: tags.album || '',
                     year: tags.year || '',
                     genre: tags.genre || '',
-                    cover: '',
                     coverBlob: null
                 };
                 
                 // Extract embedded cover art
                 if (tags.picture) {
-                    const picture = tags.picture;
-                    const base64String = picture.data.reduce((data, byte) => data + String.fromCharCode(byte), '');
-                    const base64 = btoa(base64String);
-                    metadata.cover = `data:${picture.format};base64,${base64}`;
-                    
-                    // Convert to blob for upload
-                    fetch(metadata.cover)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            metadata.coverBlob = blob;
-                            resolve(metadata);
-                        })
-                        .catch(() => resolve(metadata));
-                } else {
-                    resolve(metadata);
+                    try {
+                        const picture = tags.picture;
+                        const byteArray = new Uint8Array(picture.data);
+                        const blob = new Blob([byteArray], { type: picture.format });
+                        metadata.coverBlob = blob;
+                    } catch (err) {
+                        console.warn('Failed to extract cover art:', err);
+                    }
                 }
+                
+                resolve(metadata);
             },
-            onError: () => {
+            onError: (error) => {
+                console.warn('Metadata extraction failed:', error);
                 resolve(defaultMetadata);
             }
         });
