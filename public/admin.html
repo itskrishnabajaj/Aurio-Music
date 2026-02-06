@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurio Admin</title>
+    <title>Aurio Admin Panel</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="icon" href="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png">
 </head>
 <body>
     <!-- ADMIN LOGIN -->
     <div id="adminLogin" class="screen active">
+        <div class="login-bg"></div>
         <div class="login-container">
-            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio" class="login-logo">
-            <h1>Aurio Admin</h1>
+            <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio Admin" class="login-logo">
+            <h1>Admin Panel</h1>
+            <p class="login-subtitle">Aurio Music Management</p>
             <form id="adminLoginForm">
-                <input type="password" id="adminPassword" placeholder="Admin Password" required autocomplete="current-password">
-                <button type="submit">Login</button>
+                <input type="password" id="adminPassword" placeholder="Enter admin password" required autocomplete="current-password">
+                <button type="submit">Access Panel</button>
                 <div id="loginError" class="error-message"></div>
             </form>
         </div>
@@ -26,15 +28,15 @@
         <header class="admin-header">
             <div class="header-left">
                 <img src="https://res.cloudinary.com/ddyj2njes/image/upload/v1770220405/aurio_branding_nvrbwx.png" alt="Aurio">
-                <h1>Aurio Admin</h1>
+                <h1>Admin Panel</h1>
             </div>
             <button id="adminLogout">Logout</button>
         </header>
 
         <nav class="admin-nav">
             <button class="nav-item active" data-view="analytics">📊 Analytics</button>
-            <button class="nav-item" data-view="songs">🎵 Songs</button>
             <button class="nav-item" data-view="upload">⬆️ Upload</button>
+            <button class="nav-item" data-view="songs">🎵 Songs</button>
             <button class="nav-item" data-view="artists">🎤 Artists</button>
             <button class="nav-item" data-view="playlists">📝 Playlists</button>
             <button class="nav-item" data-view="users">👥 Users</button>
@@ -43,21 +45,25 @@
         <main class="admin-content">
             <!-- ANALYTICS VIEW -->
             <div id="analyticsView" class="view active">
-                <h2>Analytics Dashboard</h2>
+                <h2>Dashboard Overview</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
+                        <div class="stat-icon">🎵</div>
                         <div class="stat-value" id="totalSongs">0</div>
                         <div class="stat-label">Total Songs</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon">👥</div>
                         <div class="stat-value" id="activeUsers">0</div>
                         <div class="stat-label">Active Users</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon">▶️</div>
                         <div class="stat-value" id="totalPlays">0</div>
                         <div class="stat-label">Total Plays</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon">💾</div>
                         <div class="stat-value" id="storageUsed">0 MB</div>
                         <div class="stat-label">Storage Used</div>
                     </div>
@@ -69,109 +75,49 @@
                 </div>
             </div>
 
+            <!-- UPLOAD VIEW -->
+            <div id="uploadView" class="view">
+                <h2>Upload Songs</h2>
+                <div class="upload-container">
+                    <div id="dropZone" class="drop-zone">
+                        <input type="file" id="fileInput" accept="audio/mp3,audio/m4a,audio/mpeg" multiple hidden>
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">📁</div>
+                            <h3>Drag & Drop Audio Files</h3>
+                            <p>or click to browse</p>
+                            <span class="drop-zone-hint">Supports MP3, M4A • Auto-extracts metadata from ID3 tags</span>
+                        </div>
+                    </div>
+                    
+                    <div id="uploadQueue" class="upload-queue"></div>
+                </div>
+            </div>
+
             <!-- SONGS VIEW -->
             <div id="songsView" class="view">
                 <div class="view-header">
-                    <h2>Song Management</h2>
+                    <h2>Song Library</h2>
                     <input type="text" id="songSearchInput" placeholder="Search songs..." class="search-input">
                 </div>
-                <div id="songsList" class="songs-list"></div>
-            </div>
-
-            <!-- UPLOAD VIEW -->
-            <div id="uploadView" class="view">
-                <h2>Upload New Song</h2>
-                <form id="uploadForm" class="upload-form">
-                    <div class="form-group">
-                        <label>Audio File (MP3/M4A)</label>
-                        <input type="file" id="audioFile" accept="audio/mp3,audio/m4a,audio/mpeg" required>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Title</label>
-                            <input type="text" id="songTitle" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Artist</label>
-                            <input type="text" id="songArtist" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Album</label>
-                            <input type="text" id="songAlbum">
-                        </div>
-                        <div class="form-group">
-                            <label>Year</label>
-                            <input type="number" id="songYear" min="1900" max="2100">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Genre</label>
-                            <select id="songGenre">
-                                <option value="">Select Genre</option>
-                                <option value="pop">Pop</option>
-                                <option value="rock">Rock</option>
-                                <option value="hiphop">Hip Hop</option>
-                                <option value="electronic">Electronic</option>
-                                <option value="jazz">Jazz</option>
-                                <option value="classical">Classical</option>
-                                <option value="country">Country</option>
-                                <option value="rb">R&B</option>
-                                <option value="indie">Indie</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Mood</label>
-                            <select id="songMood">
-                                <option value="">Select Mood</option>
-                                <option value="energetic">Energetic</option>
-                                <option value="calm">Calm</option>
-                                <option value="chill">Chill</option>
-                                <option value="happy">Happy</option>
-                                <option value="sad">Sad</option>
-                                <option value="romantic">Romantic</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Cover Image (Optional)</label>
-                        <input type="file" id="coverFile" accept="image/*">
-                    </div>
-
-                    <div id="uploadProgress" class="upload-progress" style="display: none;">
-                        <div class="progress-bar">
-                            <div id="progressFill" class="progress-fill"></div>
-                        </div>
-                        <div id="uploadStatus" class="upload-status"></div>
-                    </div>
-
-                    <button type="submit" id="uploadBtn">Upload Song</button>
-                </form>
+                <div id="songsList" class="songs-grid"></div>
             </div>
 
             <!-- ARTISTS VIEW -->
             <div id="artistsView" class="view">
                 <div class="view-header">
-                    <h2>Artist Management</h2>
+                    <h2>Artist Profiles</h2>
                     <input type="text" id="artistSearchInput" placeholder="Search artists..." class="search-input">
                 </div>
-                <div id="artistsAdminList" class="artists-admin-list"></div>
+                <div id="artistsAdminList" class="artists-admin-grid"></div>
             </div>
 
             <!-- PLAYLISTS VIEW -->
             <div id="playlistsView" class="view">
                 <div class="view-header">
                     <h2>Playlists</h2>
-                    <button id="createPlaylistBtn" class="btn-primary">Create Playlist</button>
+                    <button id="createPlaylistBtn" class="btn-primary">+ Create Playlist</button>
                 </div>
-                <div id="playlistsList" class="playlists-list"></div>
+                <div id="playlistsList" class="playlists-grid"></div>
             </div>
 
             <!-- USERS VIEW -->
@@ -202,44 +148,46 @@
                     <input type="text" id="editArtist" required>
                 </div>
 
-                <div class="form-group">
-                    <label>Album</label>
-                    <input type="text" id="editAlbum">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Album</label>
+                        <input type="text" id="editAlbum">
+                    </div>
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" id="editYear">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Year</label>
-                    <input type="number" id="editYear">
-                </div>
-
-                <div class="form-group">
-                    <label>Genre</label>
-                    <select id="editGenre">
-                        <option value="">Select Genre</option>
-                        <option value="pop">Pop</option>
-                        <option value="rock">Rock</option>
-                        <option value="hiphop">Hip Hop</option>
-                        <option value="electronic">Electronic</option>
-                        <option value="jazz">Jazz</option>
-                        <option value="classical">Classical</option>
-                        <option value="country">Country</option>
-                        <option value="rb">R&B</option>
-                        <option value="indie">Indie</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Mood</label>
-                    <select id="editMood">
-                        <option value="">Select Mood</option>
-                        <option value="energetic">Energetic</option>
-                        <option value="calm">Calm</option>
-                        <option value="chill">Chill</option>
-                        <option value="happy">Happy</option>
-                        <option value="sad">Sad</option>
-                        <option value="romantic">Romantic</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Genre</label>
+                        <select id="editGenre">
+                            <option value="">Select Genre</option>
+                            <option value="pop">Pop</option>
+                            <option value="rock">Rock</option>
+                            <option value="hiphop">Hip Hop</option>
+                            <option value="electronic">Electronic</option>
+                            <option value="jazz">Jazz</option>
+                            <option value="classical">Classical</option>
+                            <option value="country">Country</option>
+                            <option value="rb">R&B</option>
+                            <option value="indie">Indie</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mood</label>
+                        <select id="editMood">
+                            <option value="">Select Mood</option>
+                            <option value="energetic">Energetic</option>
+                            <option value="calm">Calm</option>
+                            <option value="chill">Chill</option>
+                            <option value="happy">Happy</option>
+                            <option value="sad">Sad</option>
+                            <option value="romantic">Romantic</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -283,7 +231,7 @@
                 <div class="form-group">
                     <label>Cover Photo</label>
                     <input type="file" id="editArtistCover" accept="image/*">
-                    <div id="currentArtistCover" style="margin-top: 10px;"></div>
+                    <div id="currentArtistCover" class="current-cover"></div>
                 </div>
 
                 <div class="modal-buttons">
@@ -296,7 +244,7 @@
 
     <!-- CREATE PLAYLIST MODAL -->
     <div id="createPlaylistModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content modal-large">
             <div class="modal-header">
                 <h3>Create Playlist</h3>
                 <button class="close-modal" onclick="closeCreatePlaylistModal()">✕</button>
@@ -333,6 +281,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <script src="cloudinary.js"></script>
     <script src="admin.js"></script>
 </body>

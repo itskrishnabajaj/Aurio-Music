@@ -1,11 +1,11 @@
 {
     "name": "Aurio Music",
     "short_name": "Aurio",
-    "description": "Private Music Streaming App",
+    "description": "Your personal music sanctuary",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0f0f1e",
-    "theme_color": "#1a1a2e",
+    "background_color": "#0a0a0a",
+    "theme_color": "#0a0a0a",
     "orientation": "portrait",
     "icons": [
         {

@@ -57,7 +57,8 @@ function initAdminPanel() {
         });
     });
     
-    document.getElementById('uploadForm').addEventListener('submit', handleUpload);
+    initUploadZone();
+    
     document.getElementById('songSearchInput').addEventListener('input', handleSongSearch);
     document.getElementById('artistSearchInput').addEventListener('input', handleArtistSearch);
     document.getElementById('createPlaylistBtn').addEventListener('click', showCreatePlaylistModal);
@@ -112,7 +113,6 @@ async function loadAllData() {
     ]);
     
     renderAnalytics();
-    renderSongs();
 }
 
 function loadSongs() {
@@ -139,7 +139,7 @@ function loadPlaylists() {
     return new Promise((resolve) => {
         db.ref('playlists').on('value', (snapshot) => {
             const data = snapshot.val();
-            allPlaylists = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
+            allPlaylists = data ? Object.keys(data).map(id => ({ id, ...playlists[id] })) : [];
             resolve();
         });
     });
@@ -185,7 +185,6 @@ function renderAnalytics() {
     const totalSongs = allSongs.length;
     const activeUsers = allUsers.filter(u => u.approved === true).length;
     const totalPlays = allSongs.reduce((sum, song) => sum + (song.playCount || 0), 0);
-    
     const estimatedSize = allSongs.length * 4;
     
     document.getElementById('totalSongs').textContent = totalSongs;
@@ -208,21 +207,229 @@ function renderTopSongs() {
     container.innerHTML = sorted.map((song, index) => `
         <div class="top-song-item">
             <div class="song-rank">#${index + 1}</div>
-            <img src="${song.cover || 'https://via.placeholder.com/60'}" alt="${song.title}" class="top-song-cover">
+            <img src="${song.cover || 'https://via.placeholder.com/60'}" alt="${escapeHtml(song.title)}" class="top-song-cover">
             <div class="top-song-info">
-                <div class="top-song-title">${song.title}</div>
-                <div class="top-song-artist">${song.artist}</div>
+                <div class="top-song-title">${escapeHtml(song.title)}</div>
+                <div class="top-song-artist">${escapeHtml(song.artist)}</div>
             </div>
             <div class="top-song-plays">${(song.playCount || 0).toLocaleString()} plays</div>
         </div>
     `).join('');
 }
 
+// UPLOAD WITH AUTO-METADATA EXTRACTION
+function initUploadZone() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files).filter(file => 
+            file.type === 'audio/mpeg' || file.type === 'audio/mp3' || file.type === 'audio/m4a'
+        );
+        
+        if (files.length > 0) {
+            handleFilesUpload(files);
+        }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            handleFilesUpload(files);
+        }
+        fileInput.value = '';
+    });
+}
+
+async function handleFilesUpload(files) {
+    const queueContainer = document.getElementById('uploadQueue');
+    
+    for (const file of files) {
+        const uploadId = Date.now() + Math.random();
+        const uploadItem = createUploadItem(uploadId, file);
+        queueContainer.appendChild(uploadItem);
+        
+        await processAndUploadFile(file, uploadId);
+    }
+}
+
+function createUploadItem(uploadId, file) {
+    const div = document.createElement('div');
+    div.className = 'upload-item';
+    div.id = `upload-${uploadId}`;
+    
+    div.innerHTML = `
+        <div class="upload-item-header">
+            <div class="upload-item-icon">🎵</div>
+            <div class="upload-item-info">
+                <div class="upload-item-name">${escapeHtml(file.name)}</div>
+                <div class="upload-item-meta">Extracting metadata...</div>
+            </div>
+        </div>
+        <div class="upload-progress">
+            <div class="upload-progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="upload-status">Preparing...</div>
+    `;
+    
+    return div;
+}
+
+async function processAndUploadFile(file, uploadId) {
+    const itemEl = document.getElementById(`upload-${uploadId}`);
+    const progressBar = itemEl.querySelector('.upload-progress-bar');
+    const statusEl = itemEl.querySelector('.upload-status');
+    const metaEl = itemEl.querySelector('.upload-item-meta');
+    
+    try {
+        // Extract metadata using jsmediatags
+        statusEl.textContent = 'Reading ID3 tags...';
+        
+        const metadata = await extractMetadata(file);
+        
+        metaEl.textContent = `${metadata.title} - ${metadata.artist}`;
+        statusEl.textContent = 'Uploading audio...';
+        progressBar.style.width = '10%';
+        
+        // Upload audio file
+        const audioFormData = new FormData();
+        audioFormData.append('file', file);
+        audioFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+        audioFormData.append('resource_type', 'video');
+        
+        const audioResponse = await fetch(`${CLOUDINARY_URL}/video/upload`, {
+            method: 'POST',
+            body: audioFormData
+        });
+        
+        const audioData = await audioResponse.json();
+        progressBar.style.width = '60%';
+        
+        // Upload cover if available
+        let coverUrl = metadata.cover;
+        
+        if (metadata.coverBlob) {
+            statusEl.textContent = 'Uploading cover art...';
+            
+            const coverFormData = new FormData();
+            coverFormData.append('file', metadata.coverBlob);
+            coverFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+            
+            const coverResponse = await fetch(`${CLOUDINARY_URL}/image/upload`, {
+                method: 'POST',
+                body: coverFormData
+            });
+            
+            const coverData = await coverResponse.json();
+            coverUrl = coverData.secure_url;
+            progressBar.style.width = '80%';
+        }
+        
+        // Save to database
+        statusEl.textContent = 'Saving to database...';
+        
+        const songData = {
+            title: metadata.title,
+            artist: metadata.artist,
+            album: metadata.album || '',
+            year: metadata.year || '',
+            genre: metadata.genre || '',
+            mood: '', // Can be set later in edit
+            url: audioData.secure_url,
+            cover: coverUrl || '',
+            duration: audioData.duration || 0,
+            uploadedAt: Date.now(),
+            playCount: 0
+        };
+        
+        await db.ref('songs').push(songData);
+        
+        progressBar.style.width = '100%';
+        statusEl.textContent = 'Upload complete!';
+        statusEl.classList.add('success');
+        
+        setTimeout(() => {
+            itemEl.remove();
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        statusEl.textContent = 'Upload failed';
+        statusEl.classList.add('error');
+    }
+}
+
+function extractMetadata(file) {
+    return new Promise((resolve) => {
+        const defaultMetadata = {
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            artist: 'Unknown Artist',
+            album: '',
+            year: '',
+            genre: '',
+            cover: '',
+            coverBlob: null
+        };
+        
+        jsmediatags.read(file, {
+            onSuccess: (tag) => {
+                const tags = tag.tags;
+                const metadata = {
+                    title: tags.title || defaultMetadata.title,
+                    artist: tags.artist || defaultMetadata.artist,
+                    album: tags.album || '',
+                    year: tags.year || '',
+                    genre: tags.genre || '',
+                    cover: '',
+                    coverBlob: null
+                };
+                
+                // Extract embedded cover art
+                if (tags.picture) {
+                    const picture = tags.picture;
+                    const base64String = picture.data.reduce((data, byte) => data + String.fromCharCode(byte), '');
+                    const base64 = btoa(base64String);
+                    metadata.cover = `data:${picture.format};base64,${base64}`;
+                    
+                    // Convert to blob for upload
+                    fetch(metadata.cover)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            metadata.coverBlob = blob;
+                            resolve(metadata);
+                        })
+                        .catch(() => resolve(metadata));
+                } else {
+                    resolve(metadata);
+                }
+            },
+            onError: () => {
+                resolve(defaultMetadata);
+            }
+        });
+    });
+}
+
+// SONGS MANAGEMENT
 function renderSongs() {
     const container = document.getElementById('songsList');
     
     if (allSongs.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No songs uploaded</p>';
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No songs uploaded</p>';
         return;
     }
     
@@ -231,23 +438,21 @@ function renderSongs() {
 
 function renderSongCards(songs, container) {
     container.innerHTML = songs.map(song => `
-        <div class="song-card">
-            <div class="song-card-header">
-                <img src="${song.cover || 'https://via.placeholder.com/300'}" alt="${song.title}" class="song-card-cover">
-            </div>
+        <div class="song-card-admin">
+            <img src="${song.cover || 'https://via.placeholder.com/280'}" alt="${escapeHtml(song.title)}">
             <div class="song-card-body">
-                <div class="song-card-title">${song.title}</div>
-                <div class="song-card-artist">${song.artist}</div>
+                <div class="song-card-title">${escapeHtml(song.title)}</div>
+                <div class="song-card-artist">${escapeHtml(song.artist)}</div>
                 <div class="song-card-meta">
-                    ${song.album ? `<span class="meta-tag">${song.album}</span>` : ''}
+                    ${song.album ? `<span class="meta-tag">${escapeHtml(song.album)}</span>` : ''}
                     ${song.year ? `<span class="meta-tag">${song.year}</span>` : ''}
-                    ${song.genre ? `<span class="meta-tag">${song.genre}</span>` : ''}
-                    ${song.mood ? `<span class="meta-tag">${song.mood}</span>` : ''}
+                    ${song.genre ? `<span class="meta-tag">${escapeHtml(song.genre)}</span>` : ''}
+                    ${song.mood ? `<span class="meta-tag">${escapeHtml(song.mood)}</span>` : ''}
                     <span class="meta-tag">${(song.playCount || 0)} plays</span>
                 </div>
                 <div class="song-card-actions">
                     <button class="btn-edit" onclick="editSong('${song.id}')">Edit</button>
-                    <button class="btn-delete" onclick="deleteSong('${song.id}', '${song.title}')">Delete</button>
+                    <button class="btn-delete" onclick="deleteSong('${song.id}', '${escapeHtml(song.title)}')">Delete</button>
                 </div>
             </div>
         </div>
@@ -270,109 +475,6 @@ function handleSongSearch(e) {
     );
     
     renderSongCards(filtered, container);
-}
-
-async function handleUpload(e) {
-    e.preventDefault();
-    
-    const audioFile = document.getElementById('audioFile').files[0];
-    const title = document.getElementById('songTitle').value.trim();
-    const artist = document.getElementById('songArtist').value.trim();
-    const album = document.getElementById('songAlbum').value.trim();
-    const year = document.getElementById('songYear').value;
-    const genre = document.getElementById('songGenre').value;
-    const mood = document.getElementById('songMood').value;
-    const coverFile = document.getElementById('coverFile').files[0];
-    
-    if (!audioFile) {
-        alert('Please select an audio file');
-        return;
-    }
-    
-    const uploadBtn = document.getElementById('uploadBtn');
-    const progressDiv = document.getElementById('uploadProgress');
-    const progressFill = document.getElementById('progressFill');
-    const statusDiv = document.getElementById('uploadStatus');
-    
-    uploadBtn.disabled = true;
-    progressDiv.style.display = 'block';
-    
-    try {
-        statusDiv.textContent = 'Uploading audio file...';
-        progressFill.style.width = '10%';
-        
-        const audioFormData = new FormData();
-        audioFormData.append('file', audioFile);
-        audioFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-        audioFormData.append('resource_type', 'video');
-        
-        const audioResponse = await fetch(`${CLOUDINARY_URL}/video/upload`, {
-            method: 'POST',
-            body: audioFormData
-        });
-        
-        const audioData = await audioResponse.json();
-        progressFill.style.width = '50%';
-        
-        let coverUrl = '';
-        
-        if (coverFile) {
-            statusDiv.textContent = 'Uploading cover image...';
-            
-            const coverFormData = new FormData();
-            coverFormData.append('file', coverFile);
-            coverFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-            
-            const coverResponse = await fetch(`${CLOUDINARY_URL}/image/upload`, {
-                method: 'POST',
-                body: coverFormData
-            });
-            
-            const coverData = await coverResponse.json();
-            coverUrl = coverData.secure_url;
-            progressFill.style.width = '80%';
-        } else {
-            progressFill.style.width = '80%';
-        }
-        
-        statusDiv.textContent = 'Saving to database...';
-        
-        const songData = {
-            title,
-            artist,
-            album,
-            year,
-            genre,
-            mood,
-            url: audioData.secure_url,
-            cover: coverUrl,
-            duration: audioData.duration || 0,
-            uploadedAt: Date.now(),
-            playCount: 0
-        };
-        
-        await db.ref('songs').push(songData);
-        
-        progressFill.style.width = '100%';
-        statusDiv.textContent = 'Upload complete!';
-        
-        setTimeout(() => {
-            document.getElementById('uploadForm').reset();
-            progressDiv.style.display = 'none';
-            progressFill.style.width = '0%';
-            uploadBtn.disabled = false;
-            statusDiv.textContent = '';
-        }, 2000);
-        
-        switchView('songs');
-        
-    } catch (error) {
-        console.error('Upload error:', error);
-        alert('Upload failed. Please try again.');
-        uploadBtn.disabled = false;
-        progressDiv.style.display = 'none';
-        progressFill.style.width = '0%';
-    }
 }
 
 function editSong(songId) {
@@ -482,217 +584,12 @@ async function deleteSong(songId, title) {
     }
 }
 
-function renderPlaylists() {
-    const container = document.getElementById('playlistsList');
-    
-    if (allPlaylists.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No playlists created</p>';
-        return;
-    }
-    
-    container.innerHTML = allPlaylists.map(playlist => {
-        const songCount = playlist.songs ? Object.keys(playlist.songs).length : 0;
-        return `
-            <div class="playlist-card" onclick="editPlaylist('${playlist.id}')">
-                <div class="playlist-cover" style="background-image: url('${playlist.cover || ''}')"></div>
-                <div class="playlist-info">
-                    <div class="playlist-name">${playlist.name}</div>
-                    <div class="playlist-count">${songCount} songs</div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function showCreatePlaylistModal() {
-    document.getElementById('createPlaylistModal').classList.add('active');
-    selectedPlaylistSongs = [];
-    renderPlaylistSongSelector(allSongs);
-}
-
-function closeCreatePlaylistModal() {
-    document.getElementById('createPlaylistModal').classList.remove('active');
-    document.getElementById('createPlaylistForm').reset();
-    selectedPlaylistSongs = [];
-}
-
-function renderPlaylistSongSelector(songs) {
-    const container = document.getElementById('playlistSongsList');
-    
-    container.innerHTML = songs.map(song => {
-        const isSelected = selectedPlaylistSongs.includes(song.id);
-        return `
-            <div class="playlist-song-item ${isSelected ? 'selected' : ''}" onclick="togglePlaylistSong('${song.id}')">
-                <input type="checkbox" class="playlist-song-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()">
-                <div class="playlist-song-info">
-                    <div class="playlist-song-title">${song.title}</div>
-                    <div class="playlist-song-artist">${song.artist}</div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function togglePlaylistSong(songId) {
-    if (selectedPlaylistSongs.includes(songId)) {
-        selectedPlaylistSongs = selectedPlaylistSongs.filter(id => id !== songId);
-    } else {
-        selectedPlaylistSongs.push(songId);
-    }
-    renderPlaylistSongSelector(allSongs);
-}
-
-function handlePlaylistSongSearch(e) {
-    const query = e.target.value.toLowerCase().trim();
-    
-    if (!query) {
-        renderPlaylistSongSelector(allSongs);
-        return;
-    }
-    
-    const filtered = allSongs.filter(song =>
-        song.title.toLowerCase().includes(query) ||
-        song.artist.toLowerCase().includes(query)
-    );
-    
-    renderPlaylistSongSelector(filtered);
-}
-
-async function handleCreatePlaylist(e) {
-    e.preventDefault();
-    
-    const name = document.getElementById('playlistName').value.trim();
-    const description = document.getElementById('playlistDescription').value.trim();
-    const coverFile = document.getElementById('playlistCoverFile').files[0];
-    
-    if (selectedPlaylistSongs.length === 0) {
-        alert('Please select at least one song');
-        return;
-    }
-    
-    try {
-        let coverUrl = '';
-        
-        if (coverFile) {
-            const coverFormData = new FormData();
-            coverFormData.append('file', coverFile);
-            coverFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-            
-            const coverResponse = await fetch(`${CLOUDINARY_URL}/image/upload`, {
-                method: 'POST',
-                body: coverFormData
-            });
-            
-            const coverData = await coverResponse.json();
-            coverUrl = coverData.secure_url;
-        }
-        
-        const songs = {};
-        selectedPlaylistSongs.forEach(id => {
-            songs[id] = true;
-        });
-        
-        const playlistData = {
-            name,
-            description,
-            cover: coverUrl,
-            songs,
-            createdAt: Date.now()
-        };
-        
-        await db.ref('playlists').push(playlistData);
-        
-        closeCreatePlaylistModal();
-        renderPlaylists();
-        
-    } catch (error) {
-        console.error('Create playlist error:', error);
-        alert('Failed to create playlist');
-    }
-}
-
-function editPlaylist(playlistId) {
-    console.log('Edit playlist:', playlistId);
-}
-
-function renderUsers() {
-    const container = document.getElementById('usersList');
-    
-    if (allUsers.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No users registered</p>';
-        return;
-    }
-    
-    container.innerHTML = allUsers.map(user => {
-        const email = `${user.username}@aurio.app`;
-        let statusClass = 'pending';
-        let statusText = 'Pending';
-        
-        if (user.approved === true) {
-            statusClass = 'approved';
-            statusText = 'Approved';
-        } else if (user.approved === false) {
-            statusClass = 'pending';
-            statusText = 'Pending';
-        }
-        
-        return `
-            <div class="user-card">
-                <div class="user-info">
-                    <div class="user-name">${user.username}</div>
-                    <div class="user-email">${email}</div>
-                    <span class="user-status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="user-actions">
-                    ${user.approved !== true ? `<button class="btn-approve" onclick="approveUser('${user.id}')">Approve</button>` : ''}
-                    ${user.approved === true ? `<button class="btn-disable" onclick="disableUser('${user.id}')">Disable</button>` : ''}
-                    ${user.approved === false && statusText === 'Pending' ? `<button class="btn-disable" onclick="rejectUser('${user.id}')">Reject</button>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function approveUser(userId) {
-    try {
-        await db.ref(`users/${userId}/approved`).set(true);
-    } catch (error) {
-        console.error('Approve error:', error);
-        alert('Failed to approve user');
-    }
-}
-
-async function disableUser(userId) {
-    if (!confirm('Are you sure you want to disable this user?')) {
-        return;
-    }
-    
-    try {
-        await db.ref(`users/${userId}/approved`).set(false);
-    } catch (error) {
-        console.error('Disable error:', error);
-        alert('Failed to disable user');
-    }
-}
-
-async function rejectUser(userId) {
-    if (!confirm('Are you sure you want to reject this user?')) {
-        return;
-    }
-    
-    try {
-        await db.ref(`users/${userId}`).remove();
-    } catch (error) {
-        console.error('Reject error:', error);
-        alert('Failed to reject user');
-    }
-}
-
+// ARTISTS MANAGEMENT
 function renderArtists() {
     const container = document.getElementById('artistsAdminList');
     
     if (allArtists.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No artists found</p>';
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No artists found</p>';
         return;
     }
     
@@ -811,6 +708,189 @@ async function handleEditArtist(e) {
     } catch (error) {
         console.error('Edit artist error:', error);
         alert('Failed to update artist profile');
+    }
+}
+
+// PLAYLISTS
+function renderPlaylists() {
+    const container = document.getElementById('playlistsList');
+    
+    if (allPlaylists.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No playlists created</p>';
+        return;
+    }
+    
+    container.innerHTML = allPlaylists.map(playlist => {
+        const songCount = playlist.songs ? Object.keys(playlist.songs).length : 0;
+        return `
+            <div class="playlist-card">
+                <div class="playlist-cover" style="${playlist.cover ? `background-image: url('${playlist.cover}')` : ''}"></div>
+                <div class="playlist-info">
+                    <div class="playlist-name">${escapeHtml(playlist.name)}</div>
+                    <div class="playlist-count">${songCount} songs</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showCreatePlaylistModal() {
+    document.getElementById('createPlaylistModal').classList.add('active');
+    selectedPlaylistSongs = [];
+    renderPlaylistSongSelector(allSongs);
+}
+
+function closeCreatePlaylistModal() {
+    document.getElementById('createPlaylistModal').classList.remove('active');
+    document.getElementById('createPlaylistForm').reset();
+    selectedPlaylistSongs = [];
+}
+
+function renderPlaylistSongSelector(songs) {
+    const container = document.getElementById('playlistSongsList');
+    
+    container.innerHTML = songs.map(song => {
+        const isSelected = selectedPlaylistSongs.includes(song.id);
+        return `
+            <div class="playlist-song-item ${isSelected ? 'selected' : ''}" onclick="togglePlaylistSong('${song.id}')">
+                <input type="checkbox" class="playlist-song-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()">
+                <div class="playlist-song-info">
+                    <div class="playlist-song-title">${escapeHtml(song.title)}</div>
+                    <div class="playlist-song-artist">${escapeHtml(song.artist)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function togglePlaylistSong(songId) {
+    if (selectedPlaylistSongs.includes(songId)) {
+        selectedPlaylistSongs = selectedPlaylistSongs.filter(id => id !== songId);
+    } else {
+        selectedPlaylistSongs.push(songId);
+    }
+    renderPlaylistSongSelector(allSongs);
+}
+
+function handlePlaylistSongSearch(e) {
+    const query = e.target.value.toLowerCase().trim();
+    
+    if (!query) {
+        renderPlaylistSongSelector(allSongs);
+        return;
+    }
+    
+    const filtered = allSongs.filter(song =>
+        song.title.toLowerCase().includes(query) ||
+        song.artist.toLowerCase().includes(query)
+    );
+    
+    renderPlaylistSongSelector(filtered);
+}
+
+async function handleCreatePlaylist(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('playlistName').value.trim();
+    const description = document.getElementById('playlistDescription').value.trim();
+    const coverFile = document.getElementById('playlistCoverFile').files[0];
+    
+    if (selectedPlaylistSongs.length === 0) {
+        alert('Please select at least one song');
+        return;
+    }
+    
+    try {
+        let coverUrl = '';
+        
+        if (coverFile) {
+            const coverFormData = new FormData();
+            coverFormData.append('file', coverFile);
+            coverFormData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+            
+            const coverResponse = await fetch(`${CLOUDINARY_URL}/image/upload`, {
+                method: 'POST',
+                body: coverFormData
+            });
+            
+            const coverData = await coverResponse.json();
+            coverUrl = coverData.secure_url;
+        }
+        
+        const songs = {};
+        selectedPlaylistSongs.forEach(id => {
+            songs[id] = true;
+        });
+        
+        const playlistData = {
+            name,
+            description,
+            cover: coverUrl,
+            songs,
+            createdAt: Date.now()
+        };
+        
+        await db.ref('playlists').push(playlistData);
+        
+        closeCreatePlaylistModal();
+        renderPlaylists();
+        
+    } catch (error) {
+        console.error('Create playlist error:', error);
+        alert('Failed to create playlist');
+    }
+}
+
+// USERS
+function renderUsers() {
+    const container = document.getElementById('usersList');
+    
+    if (allUsers.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No users registered</p>';
+        return;
+    }
+    
+    container.innerHTML = allUsers.map(user => {
+        const email = `${user.username}@aurio.app`;
+        const isApproved = user.approved === true;
+        
+        return `
+            <div class="user-card">
+                <div class="user-info">
+                    <div class="user-name">${escapeHtml(user.username)}</div>
+                    <div class="user-email">${email}</div>
+                    <span class="user-status ${isApproved ? 'approved' : 'pending'}">
+                        ${isApproved ? 'Approved' : 'Pending Approval'}
+                    </span>
+                </div>
+                <div class="user-actions">
+                    ${!isApproved ? `<button class="btn-approve" onclick="approveUser('${user.id}')">Approve</button>` : ''}
+                    ${isApproved ? `<button class="btn-disable" onclick="disableUser('${user.id}')">Disable</button>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function approveUser(userId) {
+    try {
+        await db.ref(`users/${userId}/approved`).set(true);
+    } catch (error) {
+        console.error('Approve error:', error);
+        alert('Failed to approve user');
+    }
+}
+
+async function disableUser(userId) {
+    if (!confirm('Are you sure you want to disable this user?')) {
+        return;
+    }
+    
+    try {
+        await db.ref(`users/${userId}/approved`).set(false);
+    } catch (error) {
+        console.error('Disable error:', error);
+        alert('Failed to disable user');
     }
 }
 

@@ -28,21 +28,32 @@ function registerServiceWorker() {
 function initAuth() {
     const signInForm = document.getElementById('signInForm');
     const signUpForm = document.getElementById('signUpForm');
-    const showSignIn = document.getElementById('showSignIn');
-    const showSignUp = document.getElementById('showSignUp');
+    const showSignInBtn = document.getElementById('showSignInBtn');
+    const showSignUpBtn = document.getElementById('showSignUpBtn');
+    const backFromSignIn = document.getElementById('backFromSignIn');
+    const backFromSignUp = document.getElementById('backFromSignUp');
+    const authButtons = document.getElementById('authButtons');
 
-    showSignIn.addEventListener('click', () => {
-        showSignIn.classList.add('active');
-        showSignUp.classList.remove('active');
+    showSignInBtn.addEventListener('click', () => {
+        authButtons.style.display = 'none';
         signInForm.classList.add('active');
-        signUpForm.classList.remove('active');
     });
 
-    showSignUp.addEventListener('click', () => {
-        showSignUp.classList.add('active');
-        showSignIn.classList.remove('active');
+    showSignUpBtn.addEventListener('click', () => {
+        authButtons.style.display = 'none';
         signUpForm.classList.add('active');
+    });
+
+    backFromSignIn.addEventListener('click', () => {
         signInForm.classList.remove('active');
+        authButtons.style.display = 'flex';
+        document.getElementById('signInError').textContent = '';
+    });
+
+    backFromSignUp.addEventListener('click', () => {
+        signUpForm.classList.remove('active');
+        authButtons.style.display = 'flex';
+        document.getElementById('signUpError').textContent = '';
     });
 
     signInForm.addEventListener('submit', handleSignIn);
@@ -64,12 +75,22 @@ async function handleSignIn(e) {
     const username = document.getElementById('signInUsername').value.trim();
     const password = document.getElementById('signInPassword').value;
     const errorDiv = document.getElementById('signInError');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
 
     try {
         const email = `${username.toLowerCase()}@aurio.app`;
         await auth.signInWithEmailAndPassword(email, password);
+        errorDiv.textContent = '';
     } catch (error) {
-        errorDiv.textContent = 'Invalid username or password';
+        errorDiv.textContent = error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password'
+            ? 'Invalid username or password'
+            : 'Sign in failed. Please try again.';
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
     }
 }
 
@@ -79,6 +100,7 @@ async function handleSignUp(e) {
     const password = document.getElementById('signUpPassword').value;
     const confirm = document.getElementById('signUpConfirm').value;
     const errorDiv = document.getElementById('signUpError');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
     if (password !== confirm) {
         errorDiv.textContent = 'Passwords do not match';
@@ -90,6 +112,14 @@ async function handleSignUp(e) {
         return;
     }
 
+    if (username.length < 3) {
+        errorDiv.textContent = 'Username must be at least 3 characters';
+        return;
+    }
+
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+
     try {
         const email = `${username.toLowerCase()}@aurio.app`;
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -99,16 +129,22 @@ async function handleSignUp(e) {
             approved: false,
             createdAt: Date.now(),
             likedSongs: {},
-            playlists: {}
+            playlists: {},
+            recentlyPlayed: []
         });
 
         errorDiv.textContent = '';
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
             errorDiv.textContent = 'Username already taken';
+        } else if (error.code === 'auth/weak-password') {
+            errorDiv.textContent = 'Password is too weak';
         } else {
-            errorDiv.textContent = 'Failed to create account';
+            errorDiv.textContent = 'Failed to create account. Please try again.';
         }
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
     }
 }
 
@@ -139,14 +175,17 @@ function showAuthScreen() {
     document.getElementById('signUpError').textContent = '';
     document.getElementById('signInForm').reset();
     document.getElementById('signUpForm').reset();
-    document.getElementById('pendingApproval').style.display = 'none';
+    document.getElementById('signInForm').classList.remove('active');
+    document.getElementById('signUpForm').classList.remove('active');
+    document.getElementById('authButtons').style.display = 'flex';
+    document.getElementById('pendingApproval').classList.remove('active');
 }
 
 function showPendingApproval() {
-    document.getElementById('signInForm').style.display = 'none';
-    document.getElementById('signUpForm').style.display = 'none';
-    document.getElementById('authToggle').style.display = 'none';
-    document.getElementById('pendingApproval').style.display = 'block';
+    document.getElementById('authButtons').style.display = 'none';
+    document.getElementById('signInForm').classList.remove('active');
+    document.getElementById('signUpForm').classList.remove('active');
+    document.getElementById('pendingApproval').classList.add('active');
 }
 
 async function handleLogout() {
@@ -160,6 +199,8 @@ async function handleLogout() {
     isPlaying = false;
     audioPlayer.pause();
     audioPlayer.src = '';
+    document.getElementById('miniPlayer').classList.remove('active');
+    document.getElementById('fullPlayer').classList.remove('active');
     showAuthScreen();
 }
 
@@ -182,11 +223,18 @@ async function initApp() {
 function updateGreeting() {
     const hour = new Date().getHours();
     let greeting = 'Good Evening';
+    let emoji = '🌙';
     
-    if (hour < 12) greeting = 'Good Morning';
-    else if (hour < 18) greeting = 'Good Afternoon';
+    if (hour < 12) {
+        greeting = 'Good Morning';
+        emoji = '☀️';
+    } else if (hour < 18) {
+        greeting = 'Good Afternoon';
+        emoji = '👋';
+    }
     
     document.getElementById('greetingText').textContent = `${greeting}, ${currentUser.username}`;
+    document.getElementById('greetingEmoji').textContent = emoji;
 }
 
 async function loadSongs() {
@@ -223,17 +271,26 @@ function initNavigation() {
             
             if (viewId === 'profileView') renderProfile();
             if (viewId === 'searchView') {
-                document.getElementById('searchInput').focus();
+                setTimeout(() => document.getElementById('searchInput').focus(), 100);
             }
         });
     });
     
-    document.getElementById('searchInput').addEventListener('input', handleSearch);
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => handleSearch(e), 300);
+    });
     
     document.getElementById('backFromArtist').addEventListener('click', () => {
         document.getElementById('artistView').classList.remove('active');
         document.getElementById('homeView').classList.add('active');
     });
+
+    document.getElementById('changePasswordBtn').addEventListener('click', showPasswordModal);
+    document.getElementById('closePasswordModal').addEventListener('click', closePasswordModal);
+    document.getElementById('cancelPassword').addEventListener('click', closePasswordModal);
+    document.getElementById('passwordForm').addEventListener('submit', handleChangePassword);
 }
 
 function handleSearch(e) {
@@ -241,7 +298,7 @@ function handleSearch(e) {
     const resultsDiv = document.getElementById('searchResults');
     
     if (!query) {
-        resultsDiv.innerHTML = '';
+        resultsDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>Start typing to search</p></div>';
         return;
     }
     
@@ -250,6 +307,11 @@ function handleSearch(e) {
         song.artist.toLowerCase().includes(query) ||
         (song.album && song.album.toLowerCase().includes(query))
     );
+    
+    if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">😔</div><p>No songs found</p></div>';
+        return;
+    }
     
     renderSongList(filtered, resultsDiv);
 }
@@ -263,45 +325,24 @@ function renderHome() {
     renderHomePlaylists();
 }
 
-function renderHomePlaylists() {
-    db.ref('playlists').limitToFirst(6).once('value', snapshot => {
-        const playlists = snapshot.val();
-        const container = document.getElementById('homePlaylistsList');
-        
-        if (!playlists) {
-            container.innerHTML = '';
-            return;
-        }
-        
-        const playlistArray = Object.keys(playlists).map(id => ({ id, ...playlists[id] }));
-        
-        container.innerHTML = playlistArray.map(pl => `
-            <div class="song-card" onclick="playPlaylist('${pl.id}')">
-                <img src="${pl.cover || 'https://via.placeholder.com/150'}" alt="${pl.name}">
-                <div class="song-card-info">
-                    <div class="song-card-title">${pl.name}</div>
-                    <div class="song-card-artist">${pl.songs ? Object.keys(pl.songs).length : 0} songs</div>
-                </div>
-            </div>
-        `).join('');
-    });
-}
-
 function renderRecentlyPlayed() {
     const container = document.getElementById('recentlyPlayed');
+    const section = document.getElementById('recentlyPlayedSection');
     const recent = recentlyPlayed.slice(0, 6).map(id => allSongs.find(s => s.id === id)).filter(Boolean);
     
     if (recent.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No recent plays</p>';
+        section.style.display = 'none';
         return;
     }
     
+    section.style.display = 'block';
     renderSongGrid(recent, container);
 }
 
 function renderAIRecommendations() {
     const container = document.getElementById('aiRecommendations');
     const titleEl = document.getElementById('aiSectionTitle');
+    const section = document.getElementById('aiRecommendationsSection');
     
     const hour = new Date().getHours();
     let mood = 'energetic';
@@ -328,6 +369,13 @@ function renderAIRecommendations() {
     }
     
     const shuffled = filtered.sort(() => Math.random() - 0.5).slice(0, 6);
+    
+    if (shuffled.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
     renderSongGrid(shuffled, container);
 }
 
@@ -337,7 +385,7 @@ function renderOldIsGold() {
     const shuffled = old.sort(() => Math.random() - 0.5).slice(0, 6);
     
     if (shuffled.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No classic songs available</p>';
+        container.innerHTML = '<div class="empty-state"><p>No classic songs available</p></div>';
         return;
     }
     
@@ -346,8 +394,13 @@ function renderOldIsGold() {
 
 function renderMostPlayed() {
     const container = document.getElementById('mostPlayed');
-    
     const sorted = [...allSongs].sort((a, b) => (b.playCount || 0) - (a.playCount || 0)).slice(0, 6);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No songs available</p></div>';
+        return;
+    }
+    
     renderSongGrid(sorted, container);
 }
 
@@ -365,6 +418,11 @@ function renderArtists() {
     });
     
     const artists = Object.keys(artistMap).slice(0, 12);
+    
+    if (artists.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No artists available</p></div>';
+        return;
+    }
     
     db.ref('artists').once('value', snapshot => {
         const artistData = snapshot.val() || {};
@@ -435,32 +493,53 @@ function showArtist(artistName) {
     renderSongList(songs, document.getElementById('artistSongs'));
 }
 
-function encodeArtistKey(artist) {
-    return artist.replace(/[.#$[\]]/g, '_');
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function renderHomePlaylists() {
+    db.ref('playlists').limitToFirst(6).once('value', snapshot => {
+        const playlists = snapshot.val();
+        const container = document.getElementById('homePlaylistsList');
+        
+        if (!playlists) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        const playlistArray = Object.keys(playlists).map(id => ({ id, ...playlists[id] }));
+        
+        container.innerHTML = playlistArray.map(pl => `
+            <div class="song-card" onclick="playPlaylist('${pl.id}')">
+                <img src="${pl.cover || 'https://via.placeholder.com/160'}" alt="${escapeHtml(pl.name)}">
+                <div class="song-card-info">
+                    <div class="song-card-title">${escapeHtml(pl.name)}</div>
+                    <div class="song-card-artist">${pl.songs ? Object.keys(pl.songs).length : 0} songs</div>
+                </div>
+            </div>
+        `).join('');
+    });
 }
 
 function renderLibrary() {
-    renderSongList(allSongs, document.getElementById('allSongsList'));
+    const container = document.getElementById('allSongsList');
+    
+    if (allSongs.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎵</div><p>No songs in library</p></div>';
+        return;
+    }
+    
+    renderSongList(allSongs, container);
 }
 
 function renderSongGrid(songs, container) {
     if (songs.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No songs available</p>';
+        container.innerHTML = '<div class="empty-state"><p>No songs available</p></div>';
         return;
     }
     
     container.innerHTML = songs.map(song => `
         <div class="song-card" onclick="playSong('${song.id}')">
-            <img src="${song.cover || 'https://via.placeholder.com/150'}" alt="${song.title}">
+            <img src="${song.cover || 'https://via.placeholder.com/160'}" alt="${escapeHtml(song.title)}">
             <div class="song-card-info">
-                <div class="song-card-title">${song.title}</div>
-                <div class="song-card-artist">${song.artist}</div>
+                <div class="song-card-title">${escapeHtml(song.title)}</div>
+                <div class="song-card-artist">${escapeHtml(song.artist)}</div>
             </div>
         </div>
     `).join('');
@@ -468,16 +547,16 @@ function renderSongGrid(songs, container) {
 
 function renderSongList(songs, container) {
     if (songs.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No songs available</p>';
+        container.innerHTML = '<div class="empty-state"><p>No songs available</p></div>';
         return;
     }
     
     container.innerHTML = songs.map(song => `
         <div class="song-item" onclick="playSong('${song.id}')">
-            <img src="${song.cover || 'https://via.placeholder.com/50'}" alt="${song.title}">
+            <img src="${song.cover || 'https://via.placeholder.com/56'}" alt="${escapeHtml(song.title)}">
             <div class="song-item-info">
-                <div class="song-item-title">${song.title}</div>
-                <div class="song-item-artist">${song.artist}</div>
+                <div class="song-item-title">${escapeHtml(song.title)}</div>
+                <div class="song-item-artist">${escapeHtml(song.artist)}</div>
             </div>
         </div>
     `).join('');
@@ -489,14 +568,19 @@ function initProfileScreen() {
     
     avatar.textContent = currentUser.username.charAt(0).toUpperCase();
     username.textContent = currentUser.username;
-    
-    document.getElementById('changePasswordBtn').addEventListener('click', showPasswordModal);
 }
 
 function renderProfile() {
     const likedContainer = document.getElementById('likedSongsList');
     const liked = likedSongs.map(id => allSongs.find(s => s.id === id)).filter(Boolean);
-    renderSongList(liked, likedContainer);
+    
+    document.getElementById('likedCount').textContent = liked.length;
+    
+    if (liked.length === 0) {
+        likedContainer.innerHTML = '<div class="empty-state"><p>No liked songs yet</p></div>';
+    } else {
+        renderSongList(liked, likedContainer);
+    }
     
     loadPlaylists();
 }
@@ -507,16 +591,19 @@ async function loadPlaylists() {
     const container = document.getElementById('playlistsList');
     
     if (!playlists) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No playlists available</p>';
+        container.innerHTML = '<div class="empty-state"><p>No playlists available</p></div>';
         return;
     }
     
     const playlistArray = Object.keys(playlists).map(id => ({ id, ...playlists[id] }));
     
     container.innerHTML = playlistArray.map(pl => `
-        <div class="playlist-card" onclick="playPlaylist('${pl.id}')">
-            <h4>${pl.name}</h4>
-            <p>${pl.songs ? Object.keys(pl.songs).length : 0} songs</p>
+        <div class="song-card" onclick="playPlaylist('${pl.id}')">
+            <img src="${pl.cover || 'https://via.placeholder.com/160'}" alt="${escapeHtml(pl.name)}">
+            <div class="song-card-info">
+                <div class="song-card-title">${escapeHtml(pl.name)}</div>
+                <div class="song-card-artist">${pl.songs ? Object.keys(pl.songs).length : 0} songs</div>
+            </div>
         </div>
     `).join('');
 }
@@ -538,48 +625,46 @@ function playPlaylist(playlistId) {
 }
 
 function showPasswordModal() {
-    const modal = document.getElementById('passwordModal');
-    modal.classList.add('active');
-    
-    document.getElementById('currentPassword').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmNewPassword').value = '';
+    document.getElementById('passwordModal').classList.add('active');
+    document.getElementById('passwordForm').reset();
     document.getElementById('passwordError').textContent = '';
+}
+
+function closePasswordModal() {
+    document.getElementById('passwordModal').classList.remove('active');
+}
+
+async function handleChangePassword(e) {
+    e.preventDefault();
     
-    document.getElementById('cancelPassword').onclick = () => {
-        modal.classList.remove('active');
-    };
+    const current = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmNewPassword').value;
+    const errorDiv = document.getElementById('passwordError');
     
-    document.getElementById('savePassword').onclick = async () => {
-        const current = document.getElementById('currentPassword').value;
-        const newPass = document.getElementById('newPassword').value;
-        const confirm = document.getElementById('confirmNewPassword').value;
-        const errorDiv = document.getElementById('passwordError');
+    if (newPass !== confirm) {
+        errorDiv.textContent = 'Passwords do not match';
+        return;
+    }
+    
+    if (newPass.length < 6) {
+        errorDiv.textContent = 'Password must be at least 6 characters';
+        return;
+    }
+    
+    try {
+        const user = auth.currentUser;
+        const email = user.email;
+        const credential = firebase.auth.EmailAuthProvider.credential(email, current);
         
-        if (newPass !== confirm) {
-            errorDiv.textContent = 'Passwords do not match';
-            return;
-        }
+        await user.reauthenticateWithCredential(credential);
+        await user.updatePassword(newPass);
         
-        if (newPass.length < 6) {
-            errorDiv.textContent = 'Password must be at least 6 characters';
-            return;
-        }
-        
-        try {
-            const user = auth.currentUser;
-            const email = user.email;
-            const credential = firebase.auth.EmailAuthProvider.credential(email, current);
-            
-            await user.reauthenticateWithCredential(credential);
-            await user.updatePassword(newPass);
-            
-            modal.classList.remove('active');
-            alert('Password changed successfully');
-        } catch (error) {
-            errorDiv.textContent = 'Current password is incorrect';
-        }
-    };
+        closePasswordModal();
+        alert('Password changed successfully');
+    } catch (error) {
+        errorDiv.textContent = 'Current password is incorrect';
+    }
 }
 
 function initPlayer() {
@@ -596,9 +681,10 @@ function initPlayer() {
         fullPlayer.classList.remove('active');
     });
     
-    document.getElementById('miniPlayPause').addEventListener('click', togglePlay);
-    document.getElementById('miniPrev').addEventListener('click', playPrevious);
-    document.getElementById('miniNext').addEventListener('click', playNext);
+    document.getElementById('miniPlayPause').addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay();
+    });
     
     document.getElementById('playPauseBtn').addEventListener('click', togglePlay);
     document.getElementById('prevBtn').addEventListener('click', playPrevious);
@@ -648,7 +734,7 @@ function playSong(songId) {
     updatePlayerUI();
     updateMiniPlayer();
     
-    document.getElementById('miniPlayer').style.display = 'flex';
+    miniPlayer.classList.add('active');
     
     addToRecentlyPlayed(songId);
     incrementPlayCount(songId);
@@ -668,13 +754,19 @@ function playSong(songId) {
 function updatePlayerUI() {
     if (!currentSong) return;
     
-    document.getElementById('playerCover').src = currentSong.cover || 'https://via.placeholder.com/350';
+    document.getElementById('playerCover').src = currentSong.cover || 'https://via.placeholder.com/320';
     document.getElementById('playerTitle').textContent = currentSong.title;
     document.getElementById('playerArtist').textContent = currentSong.artist;
+    document.getElementById('playerBg').style.backgroundImage = `url('${currentSong.cover || ''}')`;
     
     const likeBtn = document.getElementById('likeBtn');
-    likeBtn.classList.toggle('liked', likedSongs.includes(currentSong.id));
-    likeBtn.textContent = likedSongs.includes(currentSong.id) ? '♥' : '♡';
+    if (likedSongs.includes(currentSong.id)) {
+        likeBtn.classList.add('liked');
+        likeBtn.querySelector('svg').setAttribute('fill', 'currentColor');
+    } else {
+        likeBtn.classList.remove('liked');
+        likeBtn.querySelector('svg').setAttribute('fill', 'none');
+    }
     
     updatePlayPauseButtons();
 }
@@ -690,9 +782,16 @@ function updateMiniPlayer() {
 }
 
 function updatePlayPauseButtons() {
-    const icon = isPlaying ? '⏸' : '▶';
-    document.getElementById('miniPlayPause').textContent = icon;
-    document.getElementById('playPauseBtn').textContent = icon;
+    const miniBtn = document.getElementById('miniPlayPause');
+    const mainBtn = document.getElementById('playPauseBtn');
+    
+    const pauseSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+    const playSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const mainPlaySvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const mainPauseSvg = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+    
+    miniBtn.innerHTML = isPlaying ? pauseSvg : playSvg;
+    mainBtn.innerHTML = isPlaying ? mainPauseSvg : mainPlaySvg;
 }
 
 function togglePlay() {
@@ -763,12 +862,12 @@ async function toggleLike() {
         likedSongs = likedSongs.filter(id => id !== currentSong.id);
         await db.ref(`users/${currentUser.uid}/likedSongs/${currentSong.id}`).remove();
         likeBtn.classList.remove('liked');
-        likeBtn.textContent = '♡';
+        likeBtn.querySelector('svg').setAttribute('fill', 'none');
     } else {
         likedSongs.push(currentSong.id);
         await db.ref(`users/${currentUser.uid}/likedSongs/${currentSong.id}`).set(true);
         likeBtn.classList.add('liked');
-        likeBtn.textContent = '♥';
+        likeBtn.querySelector('svg').setAttribute('fill', 'currentColor');
     }
 }
 
@@ -802,6 +901,8 @@ function updateProgress() {
     if (duration) {
         const percent = (current / duration) * 100;
         document.getElementById('progressBar').value = percent;
+        document.getElementById('progressFill').style.setProperty('--progress', `${percent}%`);
+        document.getElementById('miniProgress').style.setProperty('--progress', `${percent}%`);
         document.getElementById('currentTime').textContent = formatTime(current);
     }
 }
@@ -827,4 +928,14 @@ async function incrementPlayCount(songId) {
     const snapshot = await songRef.once('value');
     const count = (snapshot.val() || 0) + 1;
     await songRef.set(count);
+}
+
+function encodeArtistKey(artist) {
+    return artist.replace(/[.#$[\]]/g, '_');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
