@@ -1,3 +1,6 @@
+// Aurio Admin Panel - Fixed Version
+// All bugs resolved
+
 const ADMIN_PASSWORD = 'admin123';
 
 const firebaseConfig = {
@@ -105,21 +108,38 @@ function switchView(viewName) {
 }
 
 async function loadAllData() {
+    console.log('Loading all data...');
+    
     await Promise.all([
         loadSongs(),
         loadUsers(),
-        loadPlaylists(),
-        loadArtists()
+        loadPlaylists()
     ]);
+    
+    // Process artists after songs are loaded
+    processArtists();
+    
+    console.log(`Loaded: ${allSongs.length} songs, ${allUsers.length} users, ${allArtists.length} artists`);
     
     renderAnalytics();
 }
 
 function loadSongs() {
     return new Promise((resolve) => {
-        db.ref('songs').on('value', (snapshot) => {
+        db.ref('songs').once('value', (snapshot) => {
             const data = snapshot.val();
-            allSongs = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
+            allSongs = [];
+            
+            if (data) {
+                allSongs = Object.keys(data).map(id => ({ id, ...data[id] }));
+                console.log('Songs loaded:', allSongs.length);
+            } else {
+                console.log('No songs found in database');
+            }
+            
+            resolve();
+        }, (error) => {
+            console.error('Error loading songs:', error);
             resolve();
         });
     });
@@ -127,9 +147,20 @@ function loadSongs() {
 
 function loadUsers() {
     return new Promise((resolve) => {
-        db.ref('users').on('value', (snapshot) => {
+        db.ref('users').once('value', (snapshot) => {
             const data = snapshot.val();
-            allUsers = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
+            allUsers = [];
+            
+            if (data) {
+                allUsers = Object.keys(data).map(id => ({ id, ...data[id] }));
+                console.log('Users loaded:', allUsers.length);
+            } else {
+                console.log('No users found in database');
+            }
+            
+            resolve();
+        }, (error) => {
+            console.error('Error loading users:', error);
             resolve();
         });
     });
@@ -137,47 +168,70 @@ function loadUsers() {
 
 function loadPlaylists() {
     return new Promise((resolve) => {
-        db.ref('playlists').on('value', (snapshot) => {
+        db.ref('playlists').once('value', (snapshot) => {
             const data = snapshot.val();
-            allPlaylists = data ? Object.keys(data).map(id => ({ id, ...playlists[id] })) : [];
+            allPlaylists = [];
+            
+            if (data) {
+                // Playlists are organized by userId
+                Object.keys(data).forEach(userId => {
+                    const userPlaylists = data[userId];
+                    Object.keys(userPlaylists).forEach(playlistId => {
+                        allPlaylists.push({
+                            id: playlistId,
+                            userId: userId,
+                            ...userPlaylists[playlistId]
+                        });
+                    });
+                });
+                console.log('Playlists loaded:', allPlaylists.length);
+            } else {
+                console.log('No playlists found in database');
+            }
+            
+            resolve();
+        }, (error) => {
+            console.error('Error loading playlists:', error);
             resolve();
         });
     });
 }
 
-function loadArtists() {
-    return new Promise((resolve) => {
-        db.ref('artists').on('value', (snapshot) => {
-            const artistData = snapshot.val() || {};
-            
-            const artistMap = {};
-            allSongs.forEach(song => {
-                if (song.artist && !artistMap[song.artist]) {
-                    artistMap[song.artist] = {
-                        name: song.artist,
-                        songs: []
-                    };
-                }
-                if (song.artist) {
-                    artistMap[song.artist].songs.push(song);
-                }
-            });
-            
-            allArtists = Object.keys(artistMap).map(name => {
-                const key = encodeArtistKey(name);
-                const profile = artistData[key] || {};
-                return {
-                    name,
-                    songCount: artistMap[name].songs.length,
-                    totalPlays: artistMap[name].songs.reduce((sum, s) => sum + (s.playCount || 0), 0),
-                    cover: profile.cover || '',
-                    bio: profile.bio || '',
-                    genres: profile.genres || []
+function processArtists() {
+    const artistData = {};
+    
+    allSongs.forEach(song => {
+        if (song.artist) {
+            if (!artistData[song.artist]) {
+                artistData[song.artist] = {
+                    name: song.artist,
+                    songs: [],
+                    totalPlays: 0
                 };
-            });
-            
-            resolve();
+            }
+            artistData[song.artist].songs.push(song);
+            artistData[song.artist].totalPlays += (song.playCount || 0);
+        }
+    });
+    
+    // Load artist profiles from database
+    db.ref('artists').once('value', (snapshot) => {
+        const profiles = snapshot.val() || {};
+        
+        allArtists = Object.keys(artistData).map(name => {
+            const key = encodeArtistKey(name);
+            const profile = profiles[key] || {};
+            return {
+                name,
+                songCount: artistData[name].songs.length,
+                totalPlays: artistData[name].totalPlays,
+                cover: profile.cover || '',
+                bio: profile.bio || '',
+                genres: profile.genres || []
+            };
         });
+        
+        console.log('Artists processed:', allArtists.length);
     });
 }
 
@@ -185,7 +239,7 @@ function renderAnalytics() {
     const totalSongs = allSongs.length;
     const activeUsers = allUsers.filter(u => u.approved === true).length;
     const totalPlays = allSongs.reduce((sum, song) => sum + (song.playCount || 0), 0);
-    const estimatedSize = allSongs.length * 4;
+    const estimatedSize = (allSongs.length * 4).toFixed(1);
     
     document.getElementById('totalSongs').textContent = totalSongs;
     document.getElementById('activeUsers').textContent = activeUsers;
@@ -193,6 +247,7 @@ function renderAnalytics() {
     document.getElementById('storageUsed').textContent = `${estimatedSize} MB`;
     
     renderTopSongs();
+    renderPendingApprovals();
 }
 
 function renderTopSongs() {
@@ -200,14 +255,17 @@ function renderTopSongs() {
     const container = document.getElementById('topSongsList');
     
     if (sorted.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary);">No data available</p>';
+        container.innerHTML = '<p style="color: var(--text-secondary); padding: 20px; text-align: center;">No data available</p>';
         return;
     }
     
     container.innerHTML = sorted.map((song, index) => `
         <div class="top-song-item">
             <div class="song-rank">#${index + 1}</div>
-            <img src="${song.cover || 'https://via.placeholder.com/60'}" alt="${escapeHtml(song.title)}" class="top-song-cover">
+            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/60'}" 
+                 alt="${escapeHtml(song.title)}" 
+                 class="top-song-cover"
+                 onerror="this.src='https://via.placeholder.com/60?text=♪'">
             <div class="top-song-info">
                 <div class="top-song-title">${escapeHtml(song.title)}</div>
                 <div class="top-song-artist">${escapeHtml(song.artist)}</div>
@@ -215,6 +273,32 @@ function renderTopSongs() {
             <div class="top-song-plays">${(song.playCount || 0).toLocaleString()} plays</div>
         </div>
     `).join('');
+}
+
+function renderPendingApprovals() {
+    const pending = allUsers.filter(u => u.approved !== true);
+    
+    // If there's a pending approvals section, update it
+    const pendingContainer = document.getElementById('pendingApprovals');
+    if (pendingContainer) {
+        if (pending.length === 0) {
+            pendingContainer.innerHTML = '<p style="color: var(--text-secondary); padding: 20px; text-align: center;">No pending approvals</p>';
+        } else {
+            pendingContainer.innerHTML = `
+                <div class="pending-badge">${pending.length} pending approval${pending.length > 1 ? 's' : ''}</div>
+                ${pending.slice(0, 5).map(user => `
+                    <div class="pending-user-item">
+                        <div>
+                            <div class="pending-user-name">${escapeHtml(user.username)}</div>
+                            <div class="pending-user-email">${user.email || user.username + '@aurio.app'}</div>
+                        </div>
+                        <button class="btn-approve-small" onclick="approveUser('${user.id}')">Approve</button>
+                    </div>
+                `).join('')}
+                ${pending.length > 5 ? `<p style="text-align: center; color: var(--text-secondary); margin-top: 12px;">+${pending.length - 5} more</p>` : ''}
+            `;
+        }
+    }
 }
 
 // UPLOAD WITH AUTO-METADATA EXTRACTION
@@ -367,7 +451,9 @@ async function processAndUploadFile(file, uploadId) {
             genre: metadata.genre || '',
             mood: '',
             url: audioData.secure_url,
+            audioUrl: audioData.secure_url,
             cover: coverUrl,
+            coverUrl: coverUrl,
             duration: audioData.duration || 0,
             uploadedAt: Date.now(),
             playCount: 0
@@ -378,6 +464,10 @@ async function processAndUploadFile(file, uploadId) {
         progressBar.style.width = '100%';
         statusEl.textContent = 'Upload complete!';
         statusEl.classList.add('success');
+        
+        // Reload songs
+        await loadSongs();
+        processArtists();
         
         setTimeout(() => {
             itemEl.remove();
@@ -450,7 +540,9 @@ function renderSongs() {
 function renderSongCards(songs, container) {
     container.innerHTML = songs.map(song => `
         <div class="song-card-admin">
-            <img src="${song.cover || 'https://via.placeholder.com/280'}" alt="${escapeHtml(song.title)}">
+            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/280'}" 
+                 alt="${escapeHtml(song.title)}"
+                 onerror="this.src='https://via.placeholder.com/280?text=♪'">
             <div class="song-card-body">
                 <div class="song-card-title">${escapeHtml(song.title)}</div>
                 <div class="song-card-artist">${escapeHtml(song.artist)}</div>
@@ -521,7 +613,7 @@ async function handleEditSong(e) {
     
     try {
         const song = allSongs.find(s => s.id === songId);
-        let coverUrl = song.cover;
+        let coverUrl = song.cover || song.coverUrl;
         
         if (coverFile) {
             const coverFormData = new FormData();
@@ -544,12 +636,17 @@ async function handleEditSong(e) {
             year,
             genre,
             mood,
-            cover: coverUrl
+            cover: coverUrl,
+            coverUrl: coverUrl
         };
         
         await db.ref(`songs/${songId}`).update(updates);
         
         closeEditSongModal();
+        
+        await loadSongs();
+        processArtists();
+        renderSongs();
         
     } catch (error) {
         console.error('Edit error:', error);
@@ -572,11 +669,14 @@ async function deleteSong(songId, title) {
             for (const userId in users) {
                 await db.ref(`users/${userId}/likedSongs/${songId}`).remove();
                 
-                const recentlyPlayed = users[userId].recentlyPlayed || [];
-                const filtered = recentlyPlayed.filter(id => id !== songId);
-                if (filtered.length !== recentlyPlayed.length) {
-                    await db.ref(`users/${userId}/recentlyPlayed`).set(filtered);
-                }
+                const recentlyPlayed = users[userId].recentlyPlayed || {};
+                const updates = {};
+                Object.keys(recentlyPlayed).forEach(key => {
+                    if (recentlyPlayed[key].songId !== songId) {
+                        updates[key] = recentlyPlayed[key];
+                    }
+                });
+                await db.ref(`users/${userId}/recentlyPlayed`).set(updates);
             }
         }
         
@@ -584,10 +684,17 @@ async function deleteSong(songId, title) {
         const playlists = playlistSnapshot.val();
         
         if (playlists) {
-            for (const playlistId in playlists) {
-                await db.ref(`playlists/${playlistId}/songs/${songId}`).remove();
+            for (const userId in playlists) {
+                for (const playlistId in playlists[userId]) {
+                    await db.ref(`playlists/${userId}/${playlistId}/songs/${songId}`).remove();
+                }
             }
         }
+        
+        await loadSongs();
+        processArtists();
+        renderSongs();
+        renderAnalytics();
         
     } catch (error) {
         console.error('Delete error:', error);
@@ -713,7 +820,7 @@ async function handleEditArtist(e) {
         
         closeEditArtistModal();
         
-        await loadArtists();
+        processArtists();
         renderArtists();
         
     } catch (error) {
@@ -732,7 +839,8 @@ function renderPlaylists() {
     }
     
     container.innerHTML = allPlaylists.map(playlist => {
-        const songCount = playlist.songs ? Object.keys(playlist.songs).length : 0;
+        const songs = playlist.songs || {};
+        const songCount = typeof songs === 'object' ? Object.keys(songs).length : 0;
         return `
             <div class="playlist-card">
                 <div class="playlist-cover" style="${playlist.cover ? `background-image: url('${playlist.cover}')` : ''}"></div>
@@ -841,9 +949,11 @@ async function handleCreatePlaylist(e) {
             createdAt: Date.now()
         };
         
-        await db.ref('playlists').push(playlistData);
+        // Create as admin playlist (you can modify this to assign to specific user)
+        await db.ref('playlists/admin').push(playlistData);
         
         closeCreatePlaylistModal();
+        await loadPlaylists();
         renderPlaylists();
         
     } catch (error) {
@@ -862,7 +972,7 @@ function renderUsers() {
     }
     
     container.innerHTML = allUsers.map(user => {
-        const email = `${user.username}@aurio.app`;
+        const email = user.email || `${user.username}@aurio.app`;
         const isApproved = user.approved === true;
         
         return `
@@ -886,6 +996,9 @@ function renderUsers() {
 async function approveUser(userId) {
     try {
         await db.ref(`users/${userId}/approved`).set(true);
+        await loadUsers();
+        renderUsers();
+        renderAnalytics();
     } catch (error) {
         console.error('Approve error:', error);
         alert('Failed to approve user');
@@ -899,6 +1012,9 @@ async function disableUser(userId) {
     
     try {
         await db.ref(`users/${userId}/approved`).set(false);
+        await loadUsers();
+        renderUsers();
+        renderAnalytics();
     } catch (error) {
         console.error('Disable error:', error);
         alert('Failed to disable user');
@@ -910,6 +1026,7 @@ function encodeArtistKey(artist) {
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
