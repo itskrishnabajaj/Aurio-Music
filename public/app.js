@@ -276,6 +276,13 @@ function clearAuthErrors() {
     if (DOM.signUpError) DOM.signUpError.textContent = '';
 }
 
+// Username validation helper
+function isValidUsername(username) {
+    // Allow only alphanumeric characters, underscores, and hyphens
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    return usernameRegex.test(username);
+}
+
 // Sign In with username/password
 async function handleSignIn(e) {
     e.preventDefault();
@@ -285,6 +292,12 @@ async function handleSignIn(e) {
     
     if (!username || !password) {
         DOM.signInError.textContent = 'Please fill in all fields';
+        return;
+    }
+    
+    // Validate username format
+    if (!isValidUsername(username)) {
+        DOM.signInError.textContent = 'Username can only contain letters, numbers, underscores, and hyphens';
         return;
     }
     
@@ -307,7 +320,7 @@ async function handleSignIn(e) {
         } else if (error.code === 'auth/wrong-password') {
             errorMessage = 'Incorrect password';
         } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Invalid username format';
+            errorMessage = 'Username contains invalid characters';
         } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Too many attempts. Please try again later.';
         }
@@ -347,6 +360,12 @@ async function handleSignUp(e) {
         return;
     }
     
+    // Validate username format
+    if (!isValidUsername(username)) {
+        DOM.signUpError.textContent = 'Username can only contain letters, numbers, underscores, and hyphens';
+        return;
+    }
+    
     // Convert username to email format for Firebase
     const email = `${username}@aurio.app`;
     
@@ -354,8 +373,10 @@ async function handleSignUp(e) {
     submitBtn.classList.add('loading');
     submitBtn.disabled = true;
     
+    let userCredential = null;
+    
     try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        userCredential = await auth.createUserWithEmailAndPassword(email, password);
         
         // Update display name to username
         await userCredential.user.updateProfile({
@@ -363,12 +384,18 @@ async function handleSignUp(e) {
         });
         
         // Create user record in database
-        await db.ref(`users/${userCredential.user.uid}`).set({
-            username: username,
-            email: email,
-            createdAt: Date.now(),
-            approved: true // Auto-approve for now
-        });
+        try {
+            await db.ref(`users/${userCredential.user.uid}`).set({
+                username: username,
+                email: email,
+                createdAt: Date.now(),
+                approved: true
+            });
+        } catch (dbError) {
+            console.error('Database write error:', dbError);
+            // Continue - user is still authenticated even if DB write fails
+            // The record can be created later on first login
+        }
         
         // Auth state change will handle the rest
     } catch (error) {
@@ -378,7 +405,7 @@ async function handleSignUp(e) {
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = 'This username is already taken';
         } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Invalid username format. Use only letters and numbers.';
+            errorMessage = 'Username contains invalid characters';
         } else if (error.code === 'auth/weak-password') {
             errorMessage = 'Password is too weak';
         }
