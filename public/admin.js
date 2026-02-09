@@ -1010,7 +1010,15 @@ function renderUsers() {
         return;
     }
     
-    container.innerHTML = allUsers.map(user => {
+    // Sort users: pending first, then rejected, then approved
+    const sortedUsers = [...allUsers].sort((a, b) => {
+        const statusA = a.status || (a.approved === true ? 'approved' : 'pending');
+        const statusB = b.status || (b.approved === true ? 'approved' : 'pending');
+        const order = { pending: 0, rejected: 1, approved: 2 };
+        return (order[statusA] ?? 1) - (order[statusB] ?? 1);
+    });
+    
+    container.innerHTML = sortedUsers.map(user => {
         const email = user.email || `${user.username}@aurio.app`;
         // Check both status field and legacy approved field
         const status = user.status || (user.approved === true ? 'approved' : 'pending');
