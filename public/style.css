@@ -50,6 +50,7 @@
     --btn-height-md: 44px;
     --btn-height-lg: 48px;
     --btn-height-xl: 56px;
+    --btn-height-mini: 40px;  /* For mini player controls */
     --btn-padding-x: 16px;
     --btn-font-size: 15px;
     
@@ -802,8 +803,8 @@ body {
 }
 
 .play-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--btn-height-lg);
+    height: var(--btn-height-lg);
     background: linear-gradient(135deg, var(--primary), var(--accent));
     border: none;
     border-radius: 50%;
@@ -1462,8 +1463,8 @@ button {
 }
 
 .back-btn {
-    width: 40px;
-    height: 40px;
+    width: var(--btn-height-mini);
+    height: var(--btn-height-mini);
     background: rgba(31, 31, 31, 0.8);
     backdrop-filter: blur(10px);
     border: 1px solid var(--border);
@@ -1598,8 +1599,8 @@ button {
 }
 
 .mini-control-btn {
-    width: 40px;
-    height: 40px;
+    width: var(--btn-height-mini);
+    height: var(--btn-height-mini);
     background: transparent;
     border: none;
     border-radius: 50%;
@@ -1818,8 +1819,8 @@ button {
 }
 
 .player-action-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--btn-height-lg);
+    height: var(--btn-height-lg);
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
