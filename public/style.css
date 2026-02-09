@@ -58,6 +58,12 @@
     --liked-songs-start: #667eea;
     --liked-songs-mid: #764ba2;
     --liked-songs-end: #f093fb;
+    
+    /* Animation shadows */
+    --shadow-pulse-base: 0 20px 60px rgba(0, 0, 0, 0.6);
+    --shadow-pulse-glow: 0 0 40px rgba(139, 92, 246, 0.3);
+    --shadow-pulse-base-active: 0 20px 70px rgba(0, 0, 0, 0.7);
+    --shadow-pulse-glow-active: 0 0 50px rgba(139, 92, 246, 0.4);
 }
 
 body {
@@ -1697,8 +1703,8 @@ button {
 }
 
 @keyframes coverPulse {
-    0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(139, 92, 246, 0.3); }
-    50% { box-shadow: 0 20px 70px rgba(0, 0, 0, 0.7), 0 0 50px rgba(139, 92, 246, 0.4); }
+    0%, 100% { box-shadow: var(--shadow-pulse-base), var(--shadow-pulse-glow); }
+    50% { box-shadow: var(--shadow-pulse-base-active), var(--shadow-pulse-glow-active); }
 }
 
 .player-info {
