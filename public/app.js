@@ -1700,10 +1700,11 @@ function updateProgress() {
     
     DOM.currentTime.textContent = formatTime(current);
     DOM.duration.textContent = formatTime(total);
-    DOM.progressBar.value = (current / total) * 100;
-    DOM.miniProgress.style.setProperty('--progress', `${(current / total) * 100}%`);
+    const pct = (current / total) * 100;
+    DOM.progressBar.value = pct;
+    DOM.miniProgress.style.setProperty('--progress', `${pct}%`);
     const progressFill = document.getElementById('progressFill');
-    if (progressFill) progressFill.style.setProperty('--progress', `${(current / total) * 100}%`);
+    if (progressFill) progressFill.style.setProperty('--progress', `${pct}%`);
 }
 
 function seekAudio(e) {
