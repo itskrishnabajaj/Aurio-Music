@@ -17,7 +17,7 @@ const AppState = {
     repeat: 'off',
     queue: [],
     playedInSession: new Set(),
-    currentTab: 'home',
+    currentTab: 'homeView',
     navigationHistory: [],
     settings: {
         theme: 'dark',
@@ -189,25 +189,18 @@ function setupBackButtonHandler() {
             return;
         }
         
-        if (DOM.searchContainer && DOM.searchContainer.classList.contains('active')) {
-            DOM.searchContainer.classList.remove('active');
-            DOM.searchInput.value = '';
-            DOM.searchResults.innerHTML = '';
-            return;
-        }
-        
         if (AppState.navigationHistory.length > 0) {
-            const previousTab = AppState.navigationHistory.pop();
-            switchTab(previousTab, false);
+            const previousView = AppState.navigationHistory.pop();
+            switchTab(previousView, false);
             return;
         }
         
-        if (AppState.currentTab !== 'home') {
-            switchTab('home', false);
+        if (AppState.currentTab !== 'homeView') {
+            switchTab('homeView', false);
         }
     });
     
-    history.pushState({ tab: 'home' }, '', '');
+    history.pushState({ view: 'homeView' }, '', '');
 }
 
 // ==================== AUTHENTICATION ====================
@@ -285,6 +278,10 @@ function showApp() {
     }
     if (DOM.profileName) DOM.profileName.textContent = displayName;
     if (DOM.profileEmail) DOM.profileEmail.textContent = AppState.currentUser.email || '';
+    
+    // Initialize home view
+    updateGreeting();
+    switchTab('homeView', false);
 }
 
 // Auth UI functions
@@ -567,9 +564,8 @@ function loadSongs() {
         processAlbumsAndArtists();
         renderAllSongs();
         renderSmartPlaylists();
-        renderRecentlyPlayed();
+        loadHomeView(); // Load all home tab sections
         renderAlbums();
-        renderArtists();
         updateStats();
         
     }, error => {
@@ -711,25 +707,374 @@ function renderSmartPlaylists() {
 }
 
 function renderRecentlyPlayed() {
+    const container = document.getElementById('recentlyPlayed');
+    if (!container) return;
+    
     if (AppState.recentlyPlayed.length === 0) {
-        DOM.recentSection.style.display = 'none';
+        container.innerHTML = '<p class="empty-state">No recently played items yet. Start listening!</p>';
         return;
     }
     
-    DOM.recentSection.style.display = 'block';
+    // Get last 8 recently played items (mixed songs and playlists)
+    const recentItems = AppState.recentlyPlayed.slice(0, 8);
+    const songs = [];
     
-    const recentSongIds = AppState.recentlyPlayed.slice(0, 8).map(r => r.songId);
-    const recentSongs = AppState.allSongs.filter(s => recentSongIds.includes(s.id));
+    recentItems.forEach(item => {
+        if (item.type === 'song' || !item.type) {
+            const song = AppState.allSongs.find(s => s.id === (item.songId || item.id));
+            if (song) {
+                songs.push({
+                    ...song,
+                    timestamp: item.timestamp || item.playedAt
+                });
+            }
+        }
+    });
     
-    DOM.recentSongs.innerHTML = recentSongs.map(song => `
-        <div class="song-grid-item" onclick="playSongById('${song.id}')">
-            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/100'}" 
-                 alt="${escapeHtml(song.title)}" 
-                 class="song-grid-cover">
-            <div class="song-grid-title">${escapeHtml(song.title)}</div>
-            <div class="song-grid-artist">${escapeHtml(song.artist)}</div>
+    container.className = 'song-grid recently-played';
+    container.innerHTML = songs.map(song => `
+        <div class="song-card" onclick="playSongById('${song.id}')">
+            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/160'}" 
+                 alt="${escapeHtml(song.title)}">
+            <div class="song-card-info">
+                <div class="song-card-title">${escapeHtml(song.title)}</div>
+                <div class="song-card-artist">${escapeHtml(song.artist)}</div>
+            </div>
         </div>
     `).join('');
+}
+
+// ==================== AI RECOMMENDATIONS ENGINE ====================
+function getTimeOfDay() {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 18) return 'afternoon';
+    if (hour >= 18 && hour < 22) return 'evening';
+    return 'night';
+}
+
+function getMoodForTimeOfDay(timeOfDay) {
+    const moodMap = {
+        morning: ['energetic', 'happy', 'upbeat', 'motivational'],
+        afternoon: ['upbeat', 'focused', 'energetic', 'productive'],
+        evening: ['calm', 'relaxed', 'chill', 'mellow'],
+        night: ['calm', 'peaceful', 'ambient', 'relaxed', 'chill']
+    };
+    return moodMap[timeOfDay] || [];
+}
+
+function getUserPreferences() {
+    // Analyze recently played songs to build user preference profile
+    const genreCount = {};
+    const moodCount = {};
+    const tempoSum = { count: 0, total: 0 };
+    
+    AppState.recentlyPlayed.forEach(item => {
+        const song = AppState.allSongs.find(s => s.id === (item.songId || item.id));
+        if (!song) return;
+        
+        // Count genres
+        if (song.genre) {
+            const genres = Array.isArray(song.genre) ? song.genre : [song.genre];
+            genres.forEach(g => {
+                genreCount[g] = (genreCount[g] || 0) + 1;
+            });
+        }
+        
+        // Count moods
+        if (song.mood) {
+            const moods = Array.isArray(song.mood) ? song.mood : [song.mood];
+            moods.forEach(m => {
+                moodCount[m] = (moodCount[m] || 0) + 1;
+            });
+        }
+        
+        // Average tempo
+        if (song.tempo) {
+            tempoSum.total += song.tempo;
+            tempoSum.count++;
+        }
+    });
+    
+    return {
+        genres: Object.entries(genreCount).sort((a, b) => b[1] - a[1]).map(e => e[0]),
+        moods: Object.entries(moodCount).sort((a, b) => b[1] - a[1]).map(e => e[0]),
+        avgTempo: tempoSum.count > 0 ? tempoSum.total / tempoSum.count : 120
+    };
+}
+
+function scoreRecommendation(song, userPrefs, timeOfDay, listenedSongIds) {
+    let score = 0;
+    
+    // Discovery factor - bonus for unheard songs
+    if (!listenedSongIds.has(song.id)) {
+        score += 50;
+    }
+    
+    // Genre matching
+    if (song.genre && userPrefs.genres.length > 0) {
+        const songGenres = Array.isArray(song.genre) ? song.genre : [song.genre];
+        songGenres.forEach(g => {
+            const genreIndex = userPrefs.genres.indexOf(g);
+            if (genreIndex !== -1) {
+                score += (10 - genreIndex) * 5; // Top genre gets 50 points, decreases
+            }
+        });
+    }
+    
+    // Mood matching with time of day
+    const preferredMoods = getMoodForTimeOfDay(timeOfDay);
+    if (song.mood) {
+        const songMoods = Array.isArray(song.mood) ? song.mood : [song.mood];
+        songMoods.forEach(m => {
+            if (preferredMoods.includes(m.toLowerCase())) {
+                score += 30; // Strong bonus for time-appropriate mood
+            }
+            const moodIndex = userPrefs.moods.indexOf(m);
+            if (moodIndex !== -1) {
+                score += (10 - moodIndex) * 3;
+            }
+        });
+    }
+    
+    // Tempo matching
+    if (song.tempo && userPrefs.avgTempo) {
+        const tempoDiff = Math.abs(song.tempo - userPrefs.avgTempo);
+        if (tempoDiff < 20) {
+            score += 20 - tempoDiff;
+        }
+    }
+    
+    // Random factor for serendipity
+    score += Math.random() * 10;
+    
+    return score;
+}
+
+function generateAIRecommendations() {
+    const container = document.getElementById('aiRecommendations');
+    if (!container) return;
+    
+    if (AppState.allSongs.length === 0) {
+        container.innerHTML = '<p class="empty-state">No songs available for recommendations</p>';
+        return;
+    }
+    
+    const timeOfDay = getTimeOfDay();
+    const userPrefs = getUserPreferences();
+    const listenedSongIds = new Set(AppState.recentlyPlayed.map(r => r.songId || r.id));
+    
+    // Score all songs
+    const scoredSongs = AppState.allSongs.map(song => ({
+        song,
+        score: scoreRecommendation(song, userPrefs, timeOfDay, listenedSongIds)
+    }));
+    
+    // Sort by score and take top 15
+    scoredSongs.sort((a, b) => b.score - a.score);
+    const recommendations = scoredSongs.slice(0, 15).map(s => s.song);
+    
+    // Update section title based on time
+    const titleElement = document.getElementById('aiSectionTitle');
+    if (titleElement) {
+        const timeLabels = {
+            morning: 'Morning Picks',
+            afternoon: 'Afternoon Vibes',
+            evening: 'Evening Mix',
+            night: 'Night Mode'
+        };
+        titleElement.textContent = timeLabels[timeOfDay] || 'For You';
+    }
+    
+    container.className = 'song-grid horizontal-slider';
+    container.innerHTML = recommendations.map(song => `
+        <div class="song-card" onclick="playSongById('${song.id}')">
+            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/160'}" 
+                 alt="${escapeHtml(song.title)}">
+            <div class="song-card-info">
+                <div class="song-card-title">${escapeHtml(song.title)}</div>
+                <div class="song-card-artist">${escapeHtml(song.artist)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==================== OLD IS GOLD SECTION ====================
+function renderOldIsGold() {
+    const container = document.getElementById('oldIsGold');
+    if (!container) return;
+    
+    // Filter songs released before 2005
+    const oldSongs = AppState.allSongs.filter(song => {
+        const year = parseInt(song.year);
+        return !isNaN(year) && year < 2005;
+    });
+    
+    if (oldSongs.length === 0) {
+        container.innerHTML = '<p class="empty-state">No classic songs available yet</p>';
+        return;
+    }
+    
+    // Randomize selection - shuffle and take 15
+    const shuffled = [...oldSongs].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.min(15, shuffled.length));
+    
+    container.className = 'song-grid horizontal-slider';
+    container.innerHTML = selected.map(song => `
+        <div class="song-card" onclick="playSongById('${song.id}')">
+            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/160'}" 
+                 alt="${escapeHtml(song.title)}">
+            <div class="song-card-info">
+                <div class="song-card-title">${escapeHtml(song.title)}</div>
+                <div class="song-card-artist">${escapeHtml(song.artist)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==================== MOST PLAYED SECTION ====================
+async function renderMostPlayed() {
+    const container = document.getElementById('mostPlayed');
+    if (!container) return;
+    
+    try {
+        // Fetch global play counts from Firebase
+        const snapshot = await database.ref('songs').once('value');
+        const songsData = snapshot.val();
+        
+        if (!songsData) {
+            container.innerHTML = '<p class="empty-state">No data available</p>';
+            return;
+        }
+        
+        // Build array with play counts
+        const songsWithCounts = Object.entries(songsData).map(([id, song]) => ({
+            id,
+            ...song,
+            globalPlayCount: song.globalPlayCount || 0
+        }));
+        
+        // Sort by play count and take top 10
+        songsWithCounts.sort((a, b) => b.globalPlayCount - a.globalPlayCount);
+        const topSongs = songsWithCounts.slice(0, 10);
+        
+        if (topSongs.length === 0) {
+            container.innerHTML = '<p class="empty-state">No songs available</p>';
+            return;
+        }
+        
+        container.className = 'song-grid horizontal-slider';
+        container.innerHTML = topSongs.map((song, index) => {
+            const rank = index + 1;
+            let badgeClass = 'numbered';
+            if (rank === 1) badgeClass = 'gold';
+            else if (rank === 2) badgeClass = 'silver';
+            else if (rank === 3) badgeClass = 'bronze';
+            
+            return `
+                <div class="song-card with-rank" onclick="playSongById('${song.id}')">
+                    <div class="rank-badge ${badgeClass}">${rank}</div>
+                    <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/160'}" 
+                         alt="${escapeHtml(song.title)}">
+                    <div class="song-card-info">
+                        <div class="song-card-title">${escapeHtml(song.title)}</div>
+                        <div class="song-card-artist">${escapeHtml(song.artist)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading most played:', error);
+        container.innerHTML = '<p class="empty-state">Failed to load data</p>';
+    }
+}
+
+// ==================== ARTISTS SECTION ====================
+function renderHomeArtists() {
+    const container = document.getElementById('artistsList');
+    if (!container) return;
+    
+    if (AppState.artists.length === 0) {
+        container.innerHTML = '<p class="empty-state">No artists available yet</p>';
+        return;
+    }
+    
+    // Get user's play history to determine top artists
+    const artistPlayCounts = {};
+    
+    AppState.recentlyPlayed.forEach(item => {
+        const song = AppState.allSongs.find(s => s.id === (item.songId || item.id));
+        if (song && song.artist) {
+            artistPlayCounts[song.artist] = (artistPlayCounts[song.artist] || 0) + 1;
+        }
+    });
+    
+    // Sort artists by user's play count
+    const sortedArtists = [...AppState.artists].sort((a, b) => {
+        const countA = artistPlayCounts[a.name] || 0;
+        const countB = artistPlayCounts[b.name] || 0;
+        return countB - countA;
+    });
+    
+    // Take top 6 artists
+    const topArtists = sortedArtists.slice(0, 6);
+    
+    container.className = 'artists-grid';
+    container.innerHTML = topArtists.map(artist => {
+        const profilePic = artist.profilePictureUrl || artist.cover;
+        const initial = artist.name.charAt(0).toUpperCase();
+        
+        return `
+            <div class="artist-card" onclick="openArtist('${escapeHtml(artist.name)}')">
+                <div class="artist-avatar">
+                    ${profilePic ? 
+                        `<img src="${profilePic}" alt="${escapeHtml(artist.name)}">` : 
+                        initial
+                    }
+                </div>
+                <div class="artist-name">${escapeHtml(artist.name)}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ==================== HOME VIEW LOADER ====================
+function loadHomeView() {
+    renderRecentlyPlayed();
+    generateAIRecommendations();
+    renderOldIsGold();
+    renderMostPlayed();
+    renderHomeArtists();
+    renderHomePlaylists();
+}
+
+function renderHomePlaylists() {
+    const container = document.getElementById('homePlaylistsList');
+    if (!container) return;
+    
+    if (AppState.playlists.length === 0) {
+        container.innerHTML = '<p class="empty-state">No playlists yet. Create your first playlist!</p>';
+        return;
+    }
+    
+    container.className = 'song-grid horizontal-slider';
+    container.innerHTML = AppState.playlists.slice(0, 10).map(playlist => {
+        const songs = playlist.songs || {};
+        const songCount = typeof songs === 'object' ? Object.keys(songs).length : 0;
+        const coverSong = Object.values(songs)[0];
+        const cover = coverSong ? (AppState.allSongs.find(s => s.id === coverSong)?.cover || '') : '';
+        
+        return `
+            <div class="song-card" onclick="openPlaylist('${playlist.id}')">
+                <img src="${cover || 'https://via.placeholder.com/160'}" 
+                     alt="${escapeHtml(playlist.name)}">
+                <div class="song-card-info">
+                    <div class="song-card-title">${escapeHtml(playlist.name)}</div>
+                    <div class="song-card-artist">${songCount} songs</div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderAlbums() {
@@ -1083,41 +1428,66 @@ function hideFullPlayer() {
 }
 
 // ==================== NAVIGATION ====================
-function switchTab(tabName, addToHistory = true) {
-    if (addToHistory && AppState.currentTab !== tabName) {
+function updateGreeting() {
+    const greetingText = document.getElementById('greetingText');
+    const greetingEmoji = document.getElementById('greetingEmoji');
+    
+    if (!greetingText || !greetingEmoji) return;
+    
+    const hour = new Date().getHours();
+    let greeting = 'Hello';
+    let emoji = '👋';
+    
+    if (hour >= 5 && hour < 12) {
+        greeting = 'Good Morning';
+        emoji = '🌅';
+    } else if (hour >= 12 && hour < 17) {
+        greeting = 'Good Afternoon';
+        emoji = '☀️';
+    } else if (hour >= 17 && hour < 21) {
+        greeting = 'Good Evening';
+        emoji = '🌆';
+    } else {
+        greeting = 'Good Night';
+        emoji = '🌙';
+    }
+    
+    greetingText.textContent = greeting;
+    greetingEmoji.textContent = emoji;
+}
+
+function switchTab(viewName, addToHistory = true) {
+    if (addToHistory && AppState.currentTab !== viewName) {
         AppState.navigationHistory.push(AppState.currentTab);
     }
     
-    AppState.currentTab = tabName;
+    AppState.currentTab = viewName;
     
+    // Update navigation button states
     DOM.navBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabName);
+        btn.classList.toggle('active', btn.dataset.tab === viewName);
     });
     
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
+    // Hide all views
+    document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
     });
     
-    const activeTab = document.getElementById(`${tabName}Tab`);
-    if (activeTab) activeTab.classList.add('active');
+    // Show active view
+    const activeView = document.getElementById(viewName);
+    if (activeView) {
+        activeView.classList.add('active');
+    }
     
-    const titles = {
-        home: 'Home',
-        library: 'Library',
-        search: 'Search',
-        profile: 'Profile'
-    };
-    DOM.headerTitle.textContent = titles[tabName] || 'Aurio';
-    
-    if (tabName === 'search') {
-        DOM.searchContainer.classList.add('active');
-        setTimeout(() => DOM.searchInput.focus(), 100);
-    } else {
-        DOM.searchContainer.classList.remove('active');
+    // Update greeting text for home view
+    if (viewName === 'homeView') {
+        updateGreeting();
+        // Refresh home content
+        loadHomeView();
     }
     
     if (addToHistory) {
-        history.pushState({ tab: tabName }, '', '');
+        history.pushState({ view: viewName }, '', '');
     }
 }
 
@@ -1371,47 +1741,50 @@ function openArtist(artistName) {
     const artist = AppState.artists.find(a => a.name === artistName);
     if (!artist) return;
     
-    const modalHTML = `
-        <div class="modal-overlay" onclick="closeModal()">
-            <div class="artist-view-modal" onclick="event.stopPropagation()">
-                <div class="artist-view-header">
-                    <button class="back-btn" onclick="closeModal()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"/>
-                        </svg>
-                    </button>
-                    <h2>Artist</h2>
+    // Use the dedicated artist view
+    const artistView = document.getElementById('artistView');
+    if (artistView) {
+        document.getElementById('artistName').textContent = artist.name;
+        document.getElementById('artistCover').src = artist.profilePictureUrl || artist.cover || 'https://via.placeholder.com/400';
+        document.getElementById('artistBio').textContent = artist.bio || `${artist.songs.length} songs available`;
+        
+        // Set genres if available
+        const genresContainer = document.getElementById('artistGenres');
+        if (genresContainer && artist.genres) {
+            genresContainer.innerHTML = artist.genres.map(g => 
+                `<span class="artist-genre-tag">${escapeHtml(g)}</span>`
+            ).join('');
+        }
+        
+        // Set stats
+        const statsContainer = document.getElementById('artistStats');
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <span>${artist.songs.length} songs</span>
+                <span>•</span>
+                <span>${artist.totalPlays || 0} plays</span>
+            `;
+        }
+        
+        // Render songs
+        const artistSongs = document.getElementById('artistSongs');
+        if (artistSongs) {
+            artistSongs.innerHTML = artist.songs.map(song => `
+                <div class="song-item" onclick="playSongById('${song.id}')">
+                    <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/56'}" 
+                         alt="${escapeHtml(song.title)}">
+                    <div class="song-item-info">
+                        <div class="song-item-title">${escapeHtml(song.title)}</div>
+                        <div class="song-item-artist">${escapeHtml(song.artist)}</div>
+                    </div>
                 </div>
-                <div class="artist-view-info">
-                    ${artist.cover ? 
-                        `<img src="${artist.cover}" alt="${escapeHtml(artist.name)}">` :
-                        `<div class="artist-initial-large">${artist.name.charAt(0).toUpperCase()}</div>`
-                    }
-                    <h3>${escapeHtml(artist.name)}</h3>
-                    <p>${artist.songs.length} songs • ${artist.totalPlays} plays</p>
-                    <button class="btn-primary" onclick="closeModal(); playArtist('${escapeHtml(artistName)}')">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        Play All
-                    </button>
-                </div>
-                <div class="artist-songs-list">
-                    ${artist.songs.map(song => `
-                        <div class="song-item" onclick="closeModal(); playSongById('${song.id}')">
-                            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/56'}" 
-                                 alt="${escapeHtml(song.title)}" 
-                                 class="song-cover">
-                            <div class="song-info">
-                                <div class="song-title">${escapeHtml(song.title)}</div>
-                                <div class="song-artist">${escapeHtml(song.artist)}</div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-    
-    DOM.modalContainer.innerHTML = modalHTML;
+            `).join('');
+        }
+        
+        // Hide all views and show artist view
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        artistView.classList.add('active');
+    }
 }
 
 function playAlbum(albumName) {
@@ -1533,14 +1906,33 @@ function showSkeletonLoading() {
 }
 
 function trackPlay(songId) {
-    database.ref(`songs/${songId}/playCount`).transaction(count => (count || 0) + 1);
+    // Track global play count
+    database.ref(`songs/${songId}/globalPlayCount`).transaction(count => (count || 0) + 1);
     
+    // Track user's recently played
     const uid = AppState.currentUser.uid;
-    const recentId = Date.now();
-    database.ref(`users/${uid}/recentlyPlayed/${recentId}`).set({
-        songId,
-        playedAt: Date.now()
+    const timestamp = Date.now();
+    database.ref(`users/${uid}/recentlyPlayed/${timestamp}`).set({
+        type: 'song',
+        id: songId,
+        songId: songId,
+        timestamp: timestamp,
+        playedAt: timestamp
     });
+    
+    // Update local state
+    AppState.recentlyPlayed.unshift({
+        type: 'song',
+        id: songId,
+        songId: songId,
+        timestamp: timestamp,
+        playedAt: timestamp
+    });
+    
+    // Keep only last 50 items in memory
+    if (AppState.recentlyPlayed.length > 50) {
+        AppState.recentlyPlayed = AppState.recentlyPlayed.slice(0, 50);
+    }
 }
 
 function updateStats() {
@@ -1826,6 +2218,15 @@ function setupEventListeners() {
             console.error('Audio error:', e);
             showToast('Failed to load audio', 'error');
             setTimeout(playNext, 1000);
+        });
+    }
+    
+    // Artist view back button
+    const backFromArtist = document.getElementById('backFromArtist');
+    if (backFromArtist) {
+        backFromArtist.addEventListener('click', () => {
+            document.getElementById('artistView').classList.remove('active');
+            switchTab('homeView', false);
         });
     }
 }
