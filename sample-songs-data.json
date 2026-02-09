@@ -1,0 +1,296 @@
+{
+  "songs": {
+    "song1": {
+      "title": "Bohemian Rhapsody",
+      "artist": "Queen",
+      "album": "A Night at the Opera",
+      "year": 1975,
+      "genre": ["rock", "progressive"],
+      "mood": ["energetic", "dramatic"],
+      "tempo": 150,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/4/4d/Queen_A_Night_At_The_Opera.png",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "duration": 354,
+      "globalPlayCount": 1250
+    },
+    "song2": {
+      "title": "Hotel California",
+      "artist": "Eagles",
+      "album": "Hotel California",
+      "year": 1977,
+      "genre": ["rock", "classic"],
+      "mood": ["mellow", "relaxed"],
+      "tempo": 74,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/4/49/Hotelcalifornia.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "duration": 391,
+      "globalPlayCount": 980
+    },
+    "song3": {
+      "title": "Imagine",
+      "artist": "John Lennon",
+      "album": "Imagine",
+      "year": 1971,
+      "genre": ["pop", "soft rock"],
+      "mood": ["peaceful", "calm"],
+      "tempo": 76,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/1/1d/John_Lennon_-_Imagine_John_Lennon.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "duration": 183,
+      "globalPlayCount": 1540
+    },
+    "song4": {
+      "title": "Stairway to Heaven",
+      "artist": "Led Zeppelin",
+      "album": "Led Zeppelin IV",
+      "year": 1971,
+      "genre": ["rock", "hard rock"],
+      "mood": ["epic", "dramatic"],
+      "tempo": 82,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/2/26/Led_Zeppelin_-_Led_Zeppelin_IV.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      "duration": 482,
+      "globalPlayCount": 870
+    },
+    "song5": {
+      "title": "Sweet Child O' Mine",
+      "artist": "Guns N' Roses",
+      "album": "Appetite for Destruction",
+      "year": 1987,
+      "genre": ["rock", "hard rock"],
+      "mood": ["energetic", "upbeat"],
+      "tempo": 125,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/5/50/Appetite_for_Destruction.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+      "duration": 356,
+      "globalPlayCount": 1120
+    },
+    "song6": {
+      "title": "Billie Jean",
+      "artist": "Michael Jackson",
+      "album": "Thriller",
+      "year": 1983,
+      "genre": ["pop", "dance"],
+      "mood": ["upbeat", "energetic"],
+      "tempo": 117,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+      "duration": 294,
+      "globalPlayCount": 2100
+    },
+    "song7": {
+      "title": "Smells Like Teen Spirit",
+      "artist": "Nirvana",
+      "album": "Nevermind",
+      "year": 1991,
+      "genre": ["grunge", "alternative"],
+      "mood": ["rebellious", "energetic"],
+      "tempo": 116,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+      "duration": 301,
+      "globalPlayCount": 1680
+    },
+    "song8": {
+      "title": "Hey Jude",
+      "artist": "The Beatles",
+      "album": "Hey Jude",
+      "year": 1968,
+      "genre": ["rock", "pop"],
+      "mood": ["uplifting", "happy"],
+      "tempo": 75,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/9/9a/Beatles_-_Hey_Jude.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+      "duration": 431,
+      "globalPlayCount": 1890
+    },
+    "song9": {
+      "title": "Thriller",
+      "artist": "Michael Jackson",
+      "album": "Thriller",
+      "year": 1982,
+      "genre": ["pop", "funk"],
+      "mood": ["spooky", "upbeat"],
+      "tempo": 118,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+      "duration": 357,
+      "globalPlayCount": 1450
+    },
+    "song10": {
+      "title": "Shape of You",
+      "artist": "Ed Sheeran",
+      "album": "÷ (Divide)",
+      "year": 2017,
+      "genre": ["pop", "dance"],
+      "mood": ["upbeat", "happy"],
+      "tempo": 96,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/9/9f/Ed_Sheeran_Divide_cover.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+      "duration": 234,
+      "globalPlayCount": 3500
+    },
+    "song11": {
+      "title": "Blinding Lights",
+      "artist": "The Weeknd",
+      "album": "After Hours",
+      "year": 2020,
+      "genre": ["synth-pop", "electronic"],
+      "mood": ["energetic", "upbeat"],
+      "tempo": 171,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/c/c1/The_Weeknd_-_After_Hours.png",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+      "duration": 200,
+      "globalPlayCount": 4200
+    },
+    "song12": {
+      "title": "Come As You Are",
+      "artist": "Nirvana",
+      "album": "Nevermind",
+      "year": 1992,
+      "genre": ["grunge", "alternative"],
+      "mood": ["mellow", "calm"],
+      "tempo": 110,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+      "duration": 219,
+      "globalPlayCount": 1320
+    },
+    "song13": {
+      "title": "What's Going On",
+      "artist": "Marvin Gaye",
+      "album": "What's Going On",
+      "year": 1971,
+      "genre": ["soul", "r&b"],
+      "mood": ["peaceful", "thoughtful"],
+      "tempo": 98,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/c/c4/Marvin_Gaye_-_What%27s_Going_On.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+      "duration": 232,
+      "globalPlayCount": 890
+    },
+    "song14": {
+      "title": "Superstition",
+      "artist": "Stevie Wonder",
+      "album": "Talking Book",
+      "year": 1972,
+      "genre": ["funk", "soul"],
+      "mood": ["groovy", "upbeat"],
+      "tempo": 100,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/0/05/Talking_book_album_cover.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3",
+      "duration": 245,
+      "globalPlayCount": 1050
+    },
+    "song15": {
+      "title": "Purple Haze",
+      "artist": "Jimi Hendrix",
+      "album": "Are You Experienced",
+      "year": 1967,
+      "genre": ["psychedelic rock", "blues rock"],
+      "mood": ["trippy", "energetic"],
+      "tempo": 109,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/b/b0/Are_You_Experienced_-_US_cover-edit.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3",
+      "duration": 170,
+      "globalPlayCount": 760
+    },
+    "song16": {
+      "title": "Levitating",
+      "artist": "Dua Lipa",
+      "album": "Future Nostalgia",
+      "year": 2020,
+      "genre": ["pop", "disco"],
+      "mood": ["happy", "upbeat"],
+      "tempo": 103,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/9/96/Dua_Lipa_-_Future_Nostalgia_%28Official_Album_Cover%29.png",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3",
+      "duration": 203,
+      "globalPlayCount": 2800
+    },
+    "song17": {
+      "title": "Wish You Were Here",
+      "artist": "Pink Floyd",
+      "album": "Wish You Were Here",
+      "year": 1975,
+      "genre": ["progressive rock", "art rock"],
+      "mood": ["melancholic", "peaceful"],
+      "tempo": 60,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/a/a4/Pink_Floyd%2C_Wish_You_Were_Here_%281975%29.png",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3",
+      "duration": 334,
+      "globalPlayCount": 720
+    },
+    "song18": {
+      "title": "Clair de Lune",
+      "artist": "Claude Debussy",
+      "album": "Suite Bergamasque",
+      "year": 1905,
+      "genre": ["classical", "impressionist"],
+      "mood": ["peaceful", "ambient"],
+      "tempo": 50,
+      "cover": "https://via.placeholder.com/300x300/1a1a1a/ffffff?text=Debussy",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-18.mp3",
+      "duration": 300,
+      "globalPlayCount": 450
+    },
+    "song19": {
+      "title": "Good Vibrations",
+      "artist": "The Beach Boys",
+      "album": "Smiley Smile",
+      "year": 1967,
+      "genre": ["pop", "psychedelic"],
+      "mood": ["happy", "uplifting"],
+      "tempo": 144,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/2/24/Good_Vibrations_single.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-19.mp3",
+      "duration": 219,
+      "globalPlayCount": 680
+    },
+    "song20": {
+      "title": "Respect",
+      "artist": "Aretha Franklin",
+      "album": "I Never Loved a Man the Way I Love You",
+      "year": 1967,
+      "genre": ["soul", "r&b"],
+      "mood": ["empowering", "upbeat"],
+      "tempo": 115,
+      "cover": "https://upload.wikimedia.org/wikipedia/en/d/dd/Arethafranklinrespect.jpg",
+      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-20.mp3",
+      "duration": 147,
+      "globalPlayCount": 1100
+    }
+  },
+  "artists": {
+    "Queen": {
+      "profilePictureUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Queen_-_Queen_%28band%29.jpg/400px-Queen_-_Queen_%28band%29.jpg",
+      "bio": "British rock band formed in London in 1970",
+      "genres": ["rock", "progressive rock"]
+    },
+    "Eagles": {
+      "profilePictureUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/The_Eagles_in_January_1977.jpg/400px-The_Eagles_in_January_1977.jpg",
+      "bio": "American rock band formed in Los Angeles in 1971",
+      "genres": ["rock", "country rock"]
+    },
+    "John Lennon": {
+      "profilePictureUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/John_Lennon_1969_%28cropped%29.jpg/400px-John_Lennon_1969_%28cropped%29.jpg",
+      "bio": "English singer, songwriter, and peace activist",
+      "genres": ["rock", "pop"]
+    },
+    "Led Zeppelin": {
+      "profilePictureUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Led_Zeppelin_acoustic_1973.jpg/400px-Led_Zeppelin_acoustic_1973.jpg",
+      "bio": "English rock band formed in London in 1968",
+      "genres": ["hard rock", "blues rock"]
+    },
+    "Michael Jackson": {
+      "profilePictureUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Michael_Jackson_in_1988.jpg/400px-Michael_Jackson_in_1988.jpg",
+      "bio": "King of Pop, legendary American performer",
+      "genres": ["pop", "r&b"]
+    },
+    "The Weeknd": {
+      "profilePictureUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/The_Weeknd_Portrait_by_Nabil_Elderkin.jpg/400px-The_Weeknd_Portrait_by_Nabil_Elderkin.jpg",
+      "bio": "Canadian singer, songwriter, and record producer",
+      "genres": ["r&b", "pop"]
+    }
+  }
+}

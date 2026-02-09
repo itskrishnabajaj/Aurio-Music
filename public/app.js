@@ -597,6 +597,9 @@ function processAlbumsAndArtists() {
                 artistMap[song.artist] = {
                     name: song.artist,
                     cover: song.cover || song.coverUrl,
+                    profilePictureUrl: null,
+                    bio: null,
+                    genres: [],
                     songs: [],
                     totalPlays: 0
                 };
@@ -608,6 +611,39 @@ function processAlbumsAndArtists() {
     
     AppState.albums = Object.values(albumMap);
     AppState.artists = Object.values(artistMap);
+    
+    // Load artist metadata from Firebase
+    loadArtistMetadata();
+}
+
+async function loadArtistMetadata() {
+    try {
+        const snapshot = await database.ref('artists').once('value');
+        const artistsData = snapshot.val();
+        
+        if (artistsData) {
+            // Merge artist metadata with existing artist data
+            Object.entries(artistsData).forEach(([artistKey, metadata]) => {
+                const artistName = artistKey.replace(/_/g, ' ');
+                const artist = AppState.artists.find(a => 
+                    a.name.toLowerCase() === artistName.toLowerCase()
+                );
+                
+                if (artist) {
+                    artist.profilePictureUrl = metadata.profilePictureUrl;
+                    artist.bio = metadata.bio;
+                    artist.genres = metadata.genres || [];
+                }
+            });
+            
+            // Refresh home artists section if it's rendered
+            if (document.getElementById('artistsList')) {
+                renderHomeArtists();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading artist metadata:', error);
+    }
 }
 
 // ==================== RENDERING ====================
