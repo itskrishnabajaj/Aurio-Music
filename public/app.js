@@ -656,7 +656,9 @@ const VirtualScroll = {
     currentEnd: 50,
     observer: null,
     sortedSongs: [],
-    isRendering: false
+    isRendering: false,
+    scrollHandler: null, // Store scroll handler reference for cleanup
+    pendingAnimationFrame: null // Track pending animation frames
 };
 
 // ==================== RENDERING ====================
@@ -700,6 +702,9 @@ function renderAllSongs() {
 
 // Render small song lists (no virtual scrolling needed)
 function renderFullSongList(sortedSongs) {
+    // Store sortedSongs for event handlers
+    VirtualScroll.sortedSongs = sortedSongs;
+    
     DOM.allSongsList.innerHTML = sortedSongs.map((song, index) => 
         createSongItemHTML(song, index)
     ).join('');
@@ -712,9 +717,23 @@ function renderVirtualSongList(sortedSongs) {
     if (VirtualScroll.isRendering) return;
     VirtualScroll.isRendering = true;
     
+    // Cancel any pending animation frames to prevent race conditions
+    if (VirtualScroll.pendingAnimationFrame) {
+        cancelAnimationFrame(VirtualScroll.pendingAnimationFrame);
+        VirtualScroll.pendingAnimationFrame = null;
+    }
+    
     // Clean up existing observer
     if (VirtualScroll.observer) {
         VirtualScroll.observer.disconnect();
+        VirtualScroll.observer = null;
+    }
+    
+    // Clean up existing scroll handler
+    const scrollContainer = document.getElementById('mainContent');
+    if (scrollContainer && VirtualScroll.scrollHandler) {
+        scrollContainer.removeEventListener('scroll', VirtualScroll.scrollHandler);
+        VirtualScroll.scrollHandler = null;
     }
     
     // Calculate total height for scrolling
@@ -823,9 +842,15 @@ function setupIntersectionObserver(container, sortedSongs) {
                 VirtualScroll.currentStart = visibleStart;
                 VirtualScroll.currentEnd = visibleEnd;
                 
+                // Cancel any pending animation frame to prevent race conditions
+                if (VirtualScroll.pendingAnimationFrame) {
+                    cancelAnimationFrame(VirtualScroll.pendingAnimationFrame);
+                }
+                
                 // Use requestAnimationFrame for smooth 60fps rendering
-                requestAnimationFrame(() => {
+                VirtualScroll.pendingAnimationFrame = requestAnimationFrame(() => {
                     renderBatch(container, sortedSongs, visibleStart, visibleEnd);
+                    VirtualScroll.pendingAnimationFrame = null;
                 });
             }
         });
@@ -844,16 +869,15 @@ function setupIntersectionObserver(container, sortedSongs) {
     
     // Add scroll event listener for smoother updates between intersection events
     let scrollTimeout;
-    const scrollHandler = () => {
+    VirtualScroll.scrollHandler = () => {
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             observerCallback([{ isIntersecting: true }]);
         }, 100); // Debounce scroll events
     };
     
-    // Clean up old listener and add new one
-    scrollContainer.removeEventListener('scroll', scrollHandler);
-    scrollContainer.addEventListener('scroll', scrollHandler, { passive: true });
+    // Add scroll listener (cleanup is handled in renderVirtualSongList)
+    scrollContainer.addEventListener('scroll', VirtualScroll.scrollHandler, { passive: true });
 }
 
 // Helper to create song item HTML
