@@ -1662,6 +1662,13 @@ function toggleLike() {
 }
 
 // ==================== PLAYER UI ====================
+const PLAYER_ICONS = {
+    play: '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+    miniPlay: '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    miniPause: '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+};
+
 function updatePlayerUI() {
     if (!AppState.currentSong) return;
     
@@ -1677,12 +1684,8 @@ function updatePlayerUI() {
     DOM.fullArtist.textContent = song.artist;
     
     const showPause = AppState.isPlaying;
-    const playIconSVG = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-    const pauseIconSVG = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-    const miniPlaySVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-    const miniPauseSVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-    if (DOM.playPauseBtn) DOM.playPauseBtn.innerHTML = showPause ? pauseIconSVG : playIconSVG;
-    if (DOM.miniPlayPauseBtn) DOM.miniPlayPauseBtn.innerHTML = showPause ? miniPauseSVG : miniPlaySVG;
+    if (DOM.playPauseBtn) DOM.playPauseBtn.innerHTML = showPause ? PLAYER_ICONS.pause : PLAYER_ICONS.play;
+    if (DOM.miniPlayPauseBtn) DOM.miniPlayPauseBtn.innerHTML = showPause ? PLAYER_ICONS.miniPause : PLAYER_ICONS.miniPlay;
     
     DOM.likeBtn.classList.toggle('active', AppState.likedSongs.has(song.id));
     DOM.shuffleBtn.classList.toggle('active', AppState.shuffle);
