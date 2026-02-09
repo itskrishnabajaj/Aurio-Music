@@ -73,6 +73,29 @@
                     <h3>Top 10 Most Played Songs</h3>
                     <div id="topSongsList" class="top-songs-list"></div>
                 </div>
+
+                <div class="analytics-section">
+                    <h3>Genre Distribution</h3>
+                    <div id="genreChart" class="genre-chart"></div>
+                </div>
+
+                <div class="analytics-section">
+                    <h3>User Engagement</h3>
+                    <div id="userEngagement" class="user-engagement-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Total Plays</th>
+                                    <th>Listening Time</th>
+                                    <th>Top Song</th>
+                                    <th>Last Active</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userEngagementBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- UPLOAD VIEW -->
@@ -162,32 +185,36 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Genre</label>
-                        <select id="editGenre">
-                            <option value="">Select Genre</option>
-                            <option value="pop">Pop</option>
-                            <option value="rock">Rock</option>
-                            <option value="hiphop">Hip Hop</option>
-                            <option value="electronic">Electronic</option>
-                            <option value="jazz">Jazz</option>
-                            <option value="classical">Classical</option>
-                            <option value="country">Country</option>
-                            <option value="rb">R&B</option>
-                            <option value="indie">Indie</option>
-                            <option value="other">Other</option>
-                        </select>
+                        <div id="editGenre" class="checkbox-group">
+                            <label class="checkbox-label"><input type="checkbox" value="pop"> Pop</label>
+                            <label class="checkbox-label"><input type="checkbox" value="rock"> Rock</label>
+                            <label class="checkbox-label"><input type="checkbox" value="hiphop"> Hip Hop</label>
+                            <label class="checkbox-label"><input type="checkbox" value="electronic"> Electronic</label>
+                            <label class="checkbox-label"><input type="checkbox" value="jazz"> Jazz</label>
+                            <label class="checkbox-label"><input type="checkbox" value="classical"> Classical</label>
+                            <label class="checkbox-label"><input type="checkbox" value="country"> Country</label>
+                            <label class="checkbox-label"><input type="checkbox" value="rb"> R&B</label>
+                            <label class="checkbox-label"><input type="checkbox" value="indie"> Indie</label>
+                            <label class="checkbox-label"><input type="checkbox" value="other"> Other</label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Mood</label>
-                        <select id="editMood">
-                            <option value="">Select Mood</option>
-                            <option value="energetic">Energetic</option>
-                            <option value="calm">Calm</option>
-                            <option value="chill">Chill</option>
-                            <option value="happy">Happy</option>
-                            <option value="sad">Sad</option>
-                            <option value="romantic">Romantic</option>
-                        </select>
+                        <div id="editMood" class="checkbox-group">
+                            <label class="checkbox-label"><input type="checkbox" value="energetic"> Energetic</label>
+                            <label class="checkbox-label"><input type="checkbox" value="calm"> Calm</label>
+                            <label class="checkbox-label"><input type="checkbox" value="chill"> Chill</label>
+                            <label class="checkbox-label"><input type="checkbox" value="happy"> Happy</label>
+                            <label class="checkbox-label"><input type="checkbox" value="sad"> Sad</label>
+                            <label class="checkbox-label"><input type="checkbox" value="romantic"> Romantic</label>
+                        </div>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Duration</label>
+                    <input type="text" id="editDuration" placeholder="3:45" readonly>
+                    <small style="color: var(--text-secondary); font-size: 12px;">Auto-detected from audio file</small>
                 </div>
 
                 <div class="form-group">
