@@ -743,7 +743,6 @@ function renderVirtualSongList(sortedSongs) {
 // Render a batch of songs
 function renderBatch(container, sortedSongs, start, end) {
     const fragment = document.createDocumentFragment();
-    const offset = start * VirtualScroll.itemHeight;
     
     for (let i = start; i < end; i++) {
         const song = sortedSongs[i];
@@ -754,7 +753,6 @@ function renderBatch(container, sortedSongs, start, end) {
         div.style.width = '100%';
         div.dataset.index = i;
         div.dataset.songId = song.id;
-        div.dataset.virtualIndex = i;
         div.innerHTML = `
             <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/56'}" 
                  alt="${escapeHtml(song.title)}" 

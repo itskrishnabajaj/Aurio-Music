@@ -326,9 +326,16 @@
         });
 
         document.getElementById('scrollToMiddle').addEventListener('click', () => {
-            const container = DOM.allSongsList.querySelector('.virtual-scroll-container') || DOM.allSongsList;
-            const middlePos = container.scrollHeight / 2;
-            DOM.allSongsList.scrollTop = middlePos;
+            const container = DOM.allSongsList.querySelector('.virtual-scroll-container');
+            if (container) {
+                // Virtual scrolling - use container height
+                const middlePos = container.offsetHeight / 2;
+                DOM.allSongsList.scrollTop = middlePos;
+            } else {
+                // Regular scrolling - use scrollHeight
+                const middlePos = DOM.allSongsList.scrollHeight / 2;
+                DOM.allSongsList.scrollTop = middlePos;
+            }
         });
 
         // Initial render
