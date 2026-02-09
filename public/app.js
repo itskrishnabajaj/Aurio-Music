@@ -652,6 +652,7 @@ const VirtualScroll = {
     itemHeight: 76, // Height of each song item (56px image + padding)
     bufferSize: 25, // Number of items to render before and after visible area
     batchSize: 50, // Total items rendered at once (visible + buffer)
+    rerenderThreshold: 12.5, // Re-render when scroll moves by half the buffer (bufferSize / 2)
     currentStart: 0,
     currentEnd: 50,
     observer: null,
@@ -718,9 +719,10 @@ function renderVirtualSongList(sortedSongs) {
     // Get the scrollable container
     const scrollContainer = document.getElementById('mainContent');
     if (!scrollContainer) {
-        console.error('Scroll container #mainContent not found');
+        console.error('Virtual scrolling: Scroll container #mainContent not found. This may occur during app initialization or if the DOM structure has changed. Falling back to non-virtual rendering.');
         VirtualScroll.isRendering = false;
-        return;
+        // Fall back to non-virtual rendering
+        return renderFullSongList(sortedSongs);
     }
     
     // Cancel any pending animation frames to prevent race conditions
@@ -847,8 +849,8 @@ function setupIntersectionObserver(container, sortedSongs) {
             );
             
             // Only re-render if the range has changed significantly (debounce)
-            if (Math.abs(visibleStart - VirtualScroll.currentStart) > VirtualScroll.bufferSize / 2 ||
-                Math.abs(visibleEnd - VirtualScroll.currentEnd) > VirtualScroll.bufferSize / 2) {
+            if (Math.abs(visibleStart - VirtualScroll.currentStart) > VirtualScroll.rerenderThreshold ||
+                Math.abs(visibleEnd - VirtualScroll.currentEnd) > VirtualScroll.rerenderThreshold) {
                 
                 VirtualScroll.currentStart = visibleStart;
                 VirtualScroll.currentEnd = visibleEnd;
