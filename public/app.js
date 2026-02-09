@@ -2836,8 +2836,12 @@ function performEnhancedSearch(query) {
         html = '<div class="empty-state">No results found</div>';
     }
     
-    DOM.searchResults.innerHTML = html;
-    DOM.recentSearches.innerHTML = '';
+    if (DOM.searchResults) {
+        DOM.searchResults.innerHTML = html;
+    }
+    if (DOM.recentSearches) {
+        DOM.recentSearches.innerHTML = '';
+    }
 }
 
 function highlightMatch(text, query) {
@@ -2846,6 +2850,8 @@ function highlightMatch(text, query) {
 }
 
 function showRecentSearches() {
+    if (!DOM.recentSearches) return;
+    
     if (AppState.recentSearches.length === 0) {
         DOM.recentSearches.innerHTML = '';
         return;
@@ -2873,14 +2879,20 @@ function showRecentSearches() {
 }
 
 function searchFromRecent(query) {
-    DOM.searchInput.value = query;
+    if (DOM.searchInput) {
+        DOM.searchInput.value = query;
+    }
+    performEnhancedSearch(query);
+}
     performEnhancedSearch(query);
 }
 
 function clearRecentSearches() {
     AppState.recentSearches = [];
     localStorage.removeItem('recentSearches');
-    DOM.recentSearches.innerHTML = '';
+    if (DOM.recentSearches) {
+        DOM.recentSearches.innerHTML = '';
+    }
 }
 
 // ==================== LIBRARY ENHANCEMENTS ====================
