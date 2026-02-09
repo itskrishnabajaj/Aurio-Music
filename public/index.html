@@ -174,9 +174,55 @@
             <div id="libraryView" class="view">
                 <div class="view-header">
                     <h1>Your Library</h1>
-                    <p class="view-subtitle">All your music in one place</p>
+                    <p class="view-subtitle" id="librarySongCount">All your music</p>
+                </div>
+                <div class="library-controls">
+                    <select id="librarySortSelect" class="library-select">
+                        <option value="title-asc">A-Z</option>
+                        <option value="title-desc">Z-A</option>
+                        <option value="artist">Artist</option>
+                        <option value="dateAdded">Date Added</option>
+                        <option value="plays">Most Played</option>
+                        <option value="year">Year</option>
+                    </select>
+                    <select id="libraryFilterGenre" class="library-select">
+                        <option value="">All Genres</option>
+                    </select>
+                    <select id="libraryFilterMood" class="library-select">
+                        <option value="">All Moods</option>
+                    </select>
                 </div>
                 <div id="allSongsList" class="song-list"></div>
+                <div id="alphabetJump" class="alphabet-jump"></div>
+            </div>
+
+            <div id="exploreView" class="view">
+                <div class="view-header">
+                    <h1>Explore</h1>
+                    <p class="view-subtitle">Browse albums and artists</p>
+                </div>
+                
+                <div class="explore-controls">
+                    <button id="albumSortBtn" class="sort-btn active">Recently Added</button>
+                </div>
+
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2>Albums</h2>
+                        <span class="section-count" id="albumCount">0</span>
+                    </div>
+                    <div id="exploreAlbums" class="albums-grid"></div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2>Artists</h2>
+                        <span class="section-count" id="artistCount">0</span>
+                    </div>
+                    <div id="exploreArtists" class="artists-grid"></div>
+                </section>
             </div>
 
             <div id="searchView" class="view">
@@ -187,35 +233,78 @@
                             <path d="m21 21-4.35-4.35"/>
                         </svg>
                         <input type="text" id="searchInput" placeholder="Search songs, artists, albums..." autocomplete="off">
+                        <button id="searchClearBtn" class="search-clear-btn" style="display:none">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
-                <div id="searchResults" class="song-list"></div>
+                <div id="recentSearches" class="recent-searches"></div>
+                <div id="searchResults"></div>
             </div>
 
             <div id="profileView" class="view">
                 <div class="profile-header">
                     <div class="profile-avatar-container">
-                        <div class="profile-avatar" id="profileAvatar"></div>
+                        <div class="profile-avatar" id="profileAvatar">
+                            <input type="file" id="avatarUpload" accept="image/*" style="display:none">
+                        </div>
+                        <button class="avatar-upload-btn" id="avatarUploadBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                        </button>
                     </div>
-                    <h2 id="profileUsername"></h2>
+                    <div class="profile-name-container">
+                        <h2 id="profileUsername"></h2>
+                        <button class="edit-name-btn" id="editNameBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="statTotalPlays">0</div>
+                        <div class="stat-label">Total Plays</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statListeningTime">0h</div>
+                        <div class="stat-label">Hours Listened</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statFavoriteGenre">-</div>
+                        <div class="stat-label">Favorite Genre</div>
+                    </div>
                 </div>
 
                 <div class="profile-sections">
                     <div class="profile-section">
                         <div class="section-header">
-                            <h3>Liked Songs</h3>
-                            <span class="section-count" id="likedCount">0</span>
+                            <h3>My Playlists</h3>
+                            <button id="createPlaylistBtn" class="create-playlist-btn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Create
+                            </button>
                         </div>
-                        <div id="likedSongsList" class="song-list"></div>
+                        <div id="userPlaylistsGrid" class="playlists-grid"></div>
                     </div>
 
                     <div class="section-divider"></div>
 
                     <div class="profile-section">
                         <div class="section-header">
-                            <h3>Playlists</h3>
+                            <h3>Liked Songs</h3>
+                            <span class="section-count" id="likedCount">0</span>
                         </div>
-                        <div id="playlistsList" class="playlists-grid"></div>
+                        <div id="likedSongsList" class="song-list"></div>
                     </div>
 
                     <div class="section-divider"></div>
@@ -346,6 +435,17 @@
                 </div>
                 
                 <div class="player-actions">
+                    <button id="queueBtn" class="player-action-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                    </button>
+                    <button id="addToPlaylistBtnPlayer" class="player-action-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </button>
                     <button id="likeBtn" class="player-action-btn">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -375,6 +475,13 @@
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                 </svg>
                 <span>Library</span>
+            </button>
+            <button data-tab="exploreView" class="nav-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+                </svg>
+                <span>Explore</span>
             </button>
             <button data-tab="searchView" class="nav-btn">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -425,6 +532,178 @@
             </form>
         </div>
     </div>
+
+    <div id="createPlaylistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Playlist</h3>
+                <button class="modal-close" id="closeCreatePlaylistModal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="createPlaylistForm">
+                <div class="form-group">
+                    <label>Playlist Name</label>
+                    <input type="text" id="playlistName" placeholder="My Awesome Playlist" required>
+                </div>
+                <div class="form-group">
+                    <label>Cover Image (Optional)</label>
+                    <input type="file" id="playlistCoverUpload" accept="image/*">
+                    <div id="playlistCoverPreview" class="cover-preview"></div>
+                </div>
+                <div id="createPlaylistError" class="error-message"></div>
+                <div class="modal-actions">
+                    <button type="button" id="cancelCreatePlaylist" class="modal-btn secondary">Cancel</button>
+                    <button type="submit" class="modal-btn primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editPlaylistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Playlist</h3>
+                <button class="modal-close" id="closeEditPlaylistModal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="editPlaylistForm">
+                <input type="hidden" id="editPlaylistId">
+                <div class="form-group">
+                    <label>Playlist Name</label>
+                    <input type="text" id="editPlaylistName" required>
+                </div>
+                <div class="form-group">
+                    <label>Songs in Playlist</label>
+                    <div id="playlistSongsList" class="playlist-songs-edit"></div>
+                </div>
+                <div id="editPlaylistError" class="error-message"></div>
+                <div class="modal-actions">
+                    <button type="button" id="deletePlaylist" class="modal-btn danger">Delete</button>
+                    <button type="button" id="cancelEditPlaylist" class="modal-btn secondary">Cancel</button>
+                    <button type="submit" class="modal-btn primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addToPlaylistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add to Playlist</h3>
+                <button class="modal-close" id="closeAddToPlaylistModal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="add-to-playlist-content">
+                <input type="hidden" id="songToAddId">
+                <button id="createNewPlaylistFromAdd" class="create-new-playlist-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Create New Playlist
+                </button>
+                <div id="userPlaylistsSelection" class="playlists-selection"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editNameModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Display Name</h3>
+                <button class="modal-close" id="closeEditNameModal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="editNameForm">
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" id="newDisplayName" placeholder="Your name" required>
+                </div>
+                <div id="editNameError" class="error-message"></div>
+                <div class="modal-actions">
+                    <button type="button" id="cancelEditName" class="modal-btn secondary">Cancel</button>
+                    <button type="submit" class="modal-btn primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="queueDrawer" class="drawer">
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h3>Up Next</h3>
+                <button class="drawer-close" id="closeQueue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="queue-section">
+                <h4>Current Queue</h4>
+                <div id="currentQueue" class="queue-list"></div>
+            </div>
+            <div class="queue-section">
+                <h4>AI Suggestions</h4>
+                <div id="suggestedQueue" class="queue-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="albumDetailView" class="view">
+        <button id="backFromAlbum" class="back-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+        </button>
+        <div class="album-detail-header">
+            <img id="albumCover" class="album-detail-cover" src="" alt="">
+            <div class="album-detail-gradient"></div>
+            <div class="album-detail-info">
+                <span class="album-type">Album</span>
+                <h1 id="albumName"></h1>
+                <p id="albumArtist"></p>
+                <div id="albumMeta" class="album-meta"></div>
+            </div>
+        </div>
+        <div class="album-actions">
+            <button id="playAlbumBtn" class="album-action-btn primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                Play All
+            </button>
+            <button id="shuffleAlbumBtn" class="album-action-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 3 21 3 21 8"/>
+                    <line x1="4" y1="20" x2="21" y2="3"/>
+                    <polyline points="21 16 21 21 16 21"/>
+                </svg>
+                Shuffle
+            </button>
+        </div>
+        <div class="section-divider"></div>
+        <div id="albumSongs" class="song-list"></div>
+    </div>
+
+    <div id="modalContainer"></div>
+    <div id="toastContainer" class="toast-container"></div>
 
     <audio id="audioPlayer"></audio>
 
