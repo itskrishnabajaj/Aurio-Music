@@ -1015,7 +1015,7 @@ function renderUsers() {
         const statusA = a.status || (a.approved === true ? 'approved' : 'pending');
         const statusB = b.status || (b.approved === true ? 'approved' : 'pending');
         const order = { pending: 0, rejected: 1, approved: 2 };
-        return (order[statusA] ?? 1) - (order[statusB] ?? 1);
+        return (order[statusA] ?? 2) - (order[statusB] ?? 2);
     });
     
     container.innerHTML = sortedUsers.map(user => {
