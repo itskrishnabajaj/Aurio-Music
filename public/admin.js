@@ -1123,7 +1123,9 @@ async function renderUserEngagement() {
         
         usersSnapshot.forEach(userSnapshot => {
             const userData = userSnapshot.val();
-            if (userData.approved) {
+            // Check both status field and legacy approved field
+            const status = userData.status || (userData.approved === true ? 'approved' : 'pending');
+            if (status === 'approved') {
                 users.push({
                     uid: userSnapshot.key,
                     ...userData

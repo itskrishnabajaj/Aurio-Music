@@ -366,8 +366,11 @@
                 </div>
                 <div class="mini-player-controls">
                     <button id="miniPlayPause" class="mini-control-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <svg id="miniPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
                             <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg id="miniPauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                            <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
                         </svg>
                     </button>
                 </div>
@@ -415,8 +418,11 @@
                         </svg>
                     </button>
                     <button id="playPauseBtn" class="player-control-btn main">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <svg id="playIcon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
                             <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg id="pauseIcon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                            <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
                         </svg>
                     </button>
                     <button id="nextBtn" class="player-control-btn">

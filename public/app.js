@@ -110,12 +110,16 @@ const DOM = {
     miniTitle: document.getElementById('miniTitle'),
     miniArtist: document.getElementById('miniArtist'),
     miniPlayPauseBtn: document.getElementById('miniPlayPause'),
+    miniPlayIcon: document.getElementById('miniPlayIcon'),
+    miniPauseIcon: document.getElementById('miniPauseIcon'),
     miniProgress: document.getElementById('miniProgress'),
     minimizePlayer: document.getElementById('closePlayer'),
     fullCover: document.getElementById('playerCover'),
     fullTitle: document.getElementById('playerTitle'),
     fullArtist: document.getElementById('playerArtist'),
     playPauseBtn: document.getElementById('playPauseBtn'),
+    playIcon: document.getElementById('playIcon'),
+    pauseIcon: document.getElementById('pauseIcon'),
     prevBtn: document.getElementById('prevBtn'),
     nextBtn: document.getElementById('nextBtn'),
     shuffleBtn: document.getElementById('shuffleBtn'),
@@ -1676,10 +1680,16 @@ function updatePlayerUI() {
     DOM.fullArtist.textContent = song.artist;
     
     const showPause = AppState.isPlaying;
-    DOM.playIcon.style.display = showPause ? 'none' : 'block';
-    DOM.pauseIcon.style.display = showPause ? 'block' : 'none';
-    DOM.miniPlayIcon.style.display = showPause ? 'none' : 'block';
-    DOM.miniPauseIcon.style.display = showPause ? 'block' : 'none';
+    
+    // Update play/pause icons with null checks
+    if (DOM.playIcon && DOM.pauseIcon) {
+        DOM.playIcon.style.display = showPause ? 'none' : 'block';
+        DOM.pauseIcon.style.display = showPause ? 'block' : 'none';
+    }
+    if (DOM.miniPlayIcon && DOM.miniPauseIcon) {
+        DOM.miniPlayIcon.style.display = showPause ? 'none' : 'block';
+        DOM.miniPauseIcon.style.display = showPause ? 'block' : 'none';
+    }
     
     DOM.likeBtn.classList.toggle('active', AppState.likedSongs.has(song.id));
     DOM.shuffleBtn.classList.toggle('active', AppState.shuffle);
