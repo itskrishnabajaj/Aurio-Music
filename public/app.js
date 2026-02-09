@@ -702,9 +702,6 @@ function renderAllSongs() {
 
 // Render small song lists (no virtual scrolling needed)
 function renderFullSongList(sortedSongs) {
-    // Store sortedSongs for event handlers
-    VirtualScroll.sortedSongs = sortedSongs;
-    
     DOM.allSongsList.innerHTML = sortedSongs.map((song, index) => 
         createSongItemHTML(song, index)
     ).join('');
@@ -716,6 +713,14 @@ function renderFullSongList(sortedSongs) {
 function renderVirtualSongList(sortedSongs) {
     if (VirtualScroll.isRendering) return;
     VirtualScroll.isRendering = true;
+    
+    // Get the scrollable container
+    const scrollContainer = document.getElementById('mainContent');
+    if (!scrollContainer) {
+        console.error('Scroll container #mainContent not found');
+        VirtualScroll.isRendering = false;
+        return;
+    }
     
     // Cancel any pending animation frames to prevent race conditions
     if (VirtualScroll.pendingAnimationFrame) {
@@ -730,8 +735,7 @@ function renderVirtualSongList(sortedSongs) {
     }
     
     // Clean up existing scroll handler
-    const scrollContainer = document.getElementById('mainContent');
-    if (scrollContainer && VirtualScroll.scrollHandler) {
+    if (VirtualScroll.scrollHandler) {
         scrollContainer.removeEventListener('scroll', VirtualScroll.scrollHandler);
         VirtualScroll.scrollHandler = null;
     }

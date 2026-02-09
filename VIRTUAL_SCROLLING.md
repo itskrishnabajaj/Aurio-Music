@@ -18,14 +18,16 @@ Implemented virtual scrolling for the Library tab to efficiently handle 3000+ so
 #### VirtualScroll State Manager
 ```javascript
 const VirtualScroll = {
-    itemHeight: 76,      // Height of each song item (56px image + 20px padding)
+    itemHeight: 76,      // Height of each song item (calculated from CSS)
     bufferSize: 25,      // Items to render before/after visible area
     batchSize: 50,       // Total items rendered (visible + buffer)
     currentStart: 0,     // Current starting index
     currentEnd: 50,      // Current ending index
     observer: null,      // IntersectionObserver instance
     sortedSongs: [],     // Current song list (filtered & sorted)
-    isRendering: false   // Prevents concurrent renders
+    isRendering: false,  // Prevents concurrent renders
+    scrollHandler: null, // Scroll event handler reference
+    pendingAnimationFrame: null // Pending animation frame ID
 }
 ```
 
@@ -156,6 +158,12 @@ Intersection Observer API is supported in all modern browsers.
 
 ## Code Location
 
-- **Implementation**: `/public/app.js` (lines 649-897)
-- **Styles**: `/public/style.css` (lines 587-623)
+- **Implementation**: `/public/app.js` 
+  - `VirtualScroll` state manager (search for "VIRTUAL SCROLLING")
+  - `renderAllSongs()` - Main entry point
+  - `renderVirtualSongList()` - Virtual scroll implementation
+  - `renderBatch()` - Batch rendering function
+  - `setupIntersectionObserver()` - Scroll detection
+  - `attachSongListeners()` - Event handler attachment
+- **Styles**: `/public/style.css` (search for "virtual-scroll" classes)
 - **Test Page**: `/public/test-virtual-scroll.html`
