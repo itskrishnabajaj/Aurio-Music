@@ -52,6 +52,11 @@
     --btn-height-xl: 56px;
     --btn-padding-x: 16px;
     --btn-font-size: 15px;
+    
+    /* 🎨 SPECIAL GRADIENT COLORS */
+    --liked-songs-start: #667eea;
+    --liked-songs-mid: #764ba2;
+    --liked-songs-end: #f093fb;
 }
 
 body {
@@ -930,7 +935,7 @@ body {
 
 /* Liked Songs Feature Card */
 .liked-songs-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, var(--liked-songs-start) 0%, var(--liked-songs-mid) 50%, var(--liked-songs-end) 100%);
     border-radius: var(--radius-lg);
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
@@ -1616,8 +1621,8 @@ button {
 }
 
 .mini-control-btn.play {
-    width: 44px;
-    height: 44px;
+    width: var(--btn-height-md);
+    height: var(--btn-height-md);
     background: linear-gradient(135deg, var(--primary), var(--accent));
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
@@ -1840,8 +1845,8 @@ button {
 
 .player-action-btn.liked {
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(244, 63, 94, 0.2));
-    border-color: #EF4444;
-    color: #EF4444;
+    border-color: var(--error);
+    color: var(--error);
 }
 
 .player-action-btn.liked:hover {
@@ -2671,8 +2676,8 @@ select:focus-visible {
     position: absolute;
     bottom: var(--spacing-sm);
     right: var(--spacing-sm);
-    width: 44px;
-    height: 44px;
+    width: var(--btn-height-md);
+    height: var(--btn-height-md);
     background: linear-gradient(135deg, var(--primary), var(--accent));
     border: none;
     border-radius: 50%;
