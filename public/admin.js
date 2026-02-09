@@ -595,8 +595,22 @@ function editSong(songId) {
     document.getElementById('editArtist').value = song.artist;
     document.getElementById('editAlbum').value = song.album || '';
     document.getElementById('editYear').value = song.year || '';
-    document.getElementById('editGenre').value = song.genre || '';
-    document.getElementById('editMood').value = song.mood || '';
+    
+    // Set genre checkboxes
+    const genreContainer = document.getElementById('editGenre');
+    const genreCheckboxes = genreContainer.querySelectorAll('input[type="checkbox"]');
+    genreCheckboxes.forEach(cb => {
+        cb.checked = (song.genre && song.genre.includes(cb.value));
+    });
+    
+    // Set mood checkboxes
+    const moodContainer = document.getElementById('editMood');
+    const moodCheckboxes = moodContainer.querySelectorAll('input[type="checkbox"]');
+    moodCheckboxes.forEach(cb => {
+        const songMood = Array.isArray(song.mood) ? song.mood : (song.mood ? [song.mood] : []);
+        cb.checked = songMood.includes(cb.value);
+    });
+    
     document.getElementById('editDuration').value = song.duration || '';
     
     document.getElementById('editSongModal').classList.add('active');
@@ -614,8 +628,15 @@ async function handleEditSong(e) {
     const artist = document.getElementById('editArtist').value.trim();
     const album = document.getElementById('editAlbum').value.trim();
     const year = document.getElementById('editYear').value;
-    const genre = document.getElementById('editGenre').value;
-    const mood = document.getElementById('editMood').value;
+    
+    // Get selected genres
+    const genreCheckboxes = document.querySelectorAll('#editGenre input[type="checkbox"]:checked');
+    const genres = Array.from(genreCheckboxes).map(cb => cb.value);
+    
+    // Get selected moods
+    const moodCheckboxes = document.querySelectorAll('#editMood input[type="checkbox"]:checked');
+    const moods = Array.from(moodCheckboxes).map(cb => cb.value);
+    
     const coverFile = document.getElementById('editCoverFile').files[0];
     
     try {
@@ -641,8 +662,9 @@ async function handleEditSong(e) {
             artist,
             album,
             year,
-            genre,
-            mood,
+            genre: genres.length > 0 ? genres[0] : '', // Keep backward compatibility
+            genres: genres, // New multi-select field
+            mood: moods, // Array of moods
             cover: coverUrl,
             coverUrl: coverUrl
         };
@@ -1049,3 +1071,150 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ==================== GENRE DISTRIBUTION CHART ====================
+function renderGenreChart() {
+    const genreCounts = {};
+    let totalSongs = 0;
+    
+    allSongs.forEach(song => {
+        if (song.genre) {
+            genreCounts[song.genre] = (genreCounts[song.genre] || 0) + 1;
+            totalSongs++;
+        }
+    });
+    
+    const sorted = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+    
+    const chartHtml = sorted.map(([genre, count]) => {
+        const percentage = (count / totalSongs * 100).toFixed(1);
+        return `
+            <div class="genre-bar">
+                <div class="genre-label">${escapeHtml(genre)}</div>
+                <div class="genre-progress">
+                    <div class="genre-fill" style="width: ${percentage}%">
+                        <span class="genre-count">${count}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('genreChart').innerHTML = chartHtml || '<div class="empty-state">No genre data available</div>';
+}
+
+// ==================== USER ENGAGEMENT DASHBOARD ====================
+async function renderUserEngagement() {
+    try {
+        const usersSnapshot = await db.ref('users').once('value');
+        const users = [];
+        
+        usersSnapshot.forEach(userSnapshot => {
+            const userData = userSnapshot.val();
+            if (userData.approved) {
+                users.push({
+                    uid: userSnapshot.key,
+                    ...userData
+                });
+            }
+        });
+        
+        // Get engagement data for each user
+        const engagementData = await Promise.all(users.map(async user => {
+            const playHistorySnapshot = await db.ref(`users/${user.uid}/playHistory`).once('value');
+            const plays = [];
+            
+            playHistorySnapshot.forEach(playSnapshot => {
+                plays.push(playSnapshot.val());
+            });
+            
+            // Calculate total listening time
+            let totalSeconds = 0;
+            const songPlays = {};
+            
+            plays.forEach(play => {
+                const song = allSongs.find(s => s.id === play.songId);
+                if (song && song.duration) {
+                    totalSeconds += song.duration;
+                }
+                songPlays[play.songId] = (songPlays[play.songId] || 0) + 1;
+            });
+            
+            // Find top song
+            const topSongEntry = Object.entries(songPlays).sort((a, b) => b[1] - a[1])[0];
+            const topSong = topSongEntry ? allSongs.find(s => s.id === topSongEntry[0]) : null;
+            
+            // Get last active time
+            const lastActive = plays.length > 0 ? 
+                Math.max(...plays.map(p => p.timestamp || 0)) : 
+                user.createdAt || 0;
+            
+            return {
+                username: user.username,
+                displayName: user.displayName || user.username,
+                avatar: user.avatar,
+                totalPlays: plays.length,
+                listeningTime: totalSeconds,
+                topSong: topSong ? topSong.title : 'N/A',
+                lastActive: lastActive
+            };
+        }));
+        
+        // Sort by total plays
+        engagementData.sort((a, b) => b.totalPlays - a.totalPlays);
+        
+        const tableHtml = engagementData.map(data => {
+            const hours = Math.floor(data.listeningTime / 3600);
+            const mins = Math.floor((data.listeningTime % 3600) / 60);
+            const timeStr = `${hours}h ${mins}m`;
+            
+            const lastActiveDate = data.lastActive ? new Date(data.lastActive) : new Date();
+            const timeDiff = Date.now() - lastActiveDate.getTime();
+            const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const lastActiveStr = daysAgo === 0 ? 'Today' : 
+                                  daysAgo === 1 ? 'Yesterday' : 
+                                  `${daysAgo} days ago`;
+            
+            const initial = data.displayName.charAt(0).toUpperCase();
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="engagement-user">
+                            <div class="engagement-avatar" style="background-image: url(${data.avatar})">
+                                ${data.avatar ? '' : initial}
+                            </div>
+                            <span class="engagement-name">${escapeHtml(data.displayName)}</span>
+                        </div>
+                    </td>
+                    <td><span class="engagement-metric">${data.totalPlays}</span></td>
+                    <td>${timeStr}</td>
+                    <td>${escapeHtml(data.topSong)}</td>
+                    <td><span class="engagement-time">${lastActiveStr}</span></td>
+                </tr>
+            `;
+        }).join('');
+        
+        document.getElementById('userEngagementBody').innerHTML = tableHtml || 
+            '<tr><td colspan="5" class="empty-state">No engagement data available</td></tr>';
+        
+    } catch (error) {
+        console.error('Error rendering user engagement:', error);
+        document.getElementById('userEngagementBody').innerHTML = 
+            '<tr><td colspan="5" class="empty-state">Error loading engagement data</td></tr>';
+    }
+}
+
+// Update renderAnalytics to include new charts
+const originalRenderAnalytics = renderAnalytics;
+renderAnalytics = function() {
+    if (typeof originalRenderAnalytics === 'function') {
+        originalRenderAnalytics();
+    }
+    
+    // Add new analytics
+    renderGenreChart();
+    renderUserEngagement();
+};
