@@ -12,3 +12,4 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.database();
+const database = db;  // Alias for compatibility

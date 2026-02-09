@@ -30,7 +30,23 @@ const AppState = {
 const DOM = {
     authScreen: document.getElementById('authScreen'),
     appScreen: document.getElementById('appScreen'),
-    googleSignInBtn: document.getElementById('googleSignIn'),
+    // Auth elements
+    authButtons: document.getElementById('authButtons'),
+    showSignInBtn: document.getElementById('showSignInBtn'),
+    showSignUpBtn: document.getElementById('showSignUpBtn'),
+    signInForm: document.getElementById('signInForm'),
+    signUpForm: document.getElementById('signUpForm'),
+    signInUsername: document.getElementById('signInUsername'),
+    signInPassword: document.getElementById('signInPassword'),
+    signInError: document.getElementById('signInError'),
+    signUpUsername: document.getElementById('signUpUsername'),
+    signUpPassword: document.getElementById('signUpPassword'),
+    signUpConfirm: document.getElementById('signUpConfirm'),
+    signUpError: document.getElementById('signUpError'),
+    backFromSignIn: document.getElementById('backFromSignIn'),
+    backFromSignUp: document.getElementById('backFromSignUp'),
+    pendingApproval: document.getElementById('pendingApproval'),
+    logoutPending: document.getElementById('logoutPending'),
     appHeader: document.getElementById('appHeader'),
     headerTitle: document.getElementById('headerTitle'),
     userAvatar: document.getElementById('userAvatar'),
@@ -64,7 +80,7 @@ const DOM = {
     filterSelect: document.getElementById('filterSelect'),
     createPlaylistBtn: document.getElementById('createPlaylistBtn'),
     profileAvatar: document.getElementById('profileAvatar'),
-    profileName: document.getElementById('profileName'),
+    profileName: document.getElementById('profileUsername'),
     profileEmail: document.getElementById('profileEmail'),
     editUsernameBtn: document.getElementById('editUsernameBtn'),
     likedSongsToggle: document.getElementById('likedSongsToggle'),
@@ -76,54 +92,66 @@ const DOM = {
     statPlaylists: document.getElementById('statPlaylists'),
     themeToggle: document.getElementById('themeToggle'),
     crossfadeToggle: document.getElementById('crossfadeToggle'),
-    signOutBtn: document.getElementById('signOutBtn'),
+    signOutBtn: document.getElementById('logoutBtn'),
     audioPlayer: document.getElementById('audioPlayer'),
     miniPlayer: document.getElementById('miniPlayer'),
     fullPlayer: document.getElementById('fullPlayer'),
-    miniPlayerTap: document.getElementById('miniPlayerTap'),
+    miniPlayerTap: document.getElementById('miniPlayer'),
     miniCover: document.getElementById('miniCover'),
     miniTitle: document.getElementById('miniTitle'),
     miniArtist: document.getElementById('miniArtist'),
-    miniPlayPauseBtn: document.getElementById('miniPlayPauseBtn'),
-    miniPlayIcon: document.getElementById('miniPlayIcon'),
-    miniPauseIcon: document.getElementById('miniPauseIcon'),
+    miniPlayPauseBtn: document.getElementById('miniPlayPause'),
     miniProgress: document.getElementById('miniProgress'),
-    minimizePlayer: document.getElementById('minimizePlayer'),
-    fullCover: document.getElementById('fullCover'),
-    fullTitle: document.getElementById('fullTitle'),
-    fullArtist: document.getElementById('fullArtist'),
+    minimizePlayer: document.getElementById('closePlayer'),
+    fullCover: document.getElementById('playerCover'),
+    fullTitle: document.getElementById('playerTitle'),
+    fullArtist: document.getElementById('playerArtist'),
     playPauseBtn: document.getElementById('playPauseBtn'),
-    playIcon: document.getElementById('playIcon'),
-    pauseIcon: document.getElementById('pauseIcon'),
     prevBtn: document.getElementById('prevBtn'),
     nextBtn: document.getElementById('nextBtn'),
     shuffleBtn: document.getElementById('shuffleBtn'),
     repeatBtn: document.getElementById('repeatBtn'),
     progressBar: document.getElementById('progressBar'),
     currentTime: document.getElementById('currentTime'),
-    duration: document.getElementById('duration'),
+    duration: document.getElementById('totalTime'),
     likeBtn: document.getElementById('likeBtn'),
-    queueBtn: document.getElementById('queueBtn'),
-    modalContainer: document.getElementById('modalContainer'),
-    toastContainer: document.getElementById('toastContainer')
+    volumeSlider: document.getElementById('volumeSlider'),
+    modalContainer: null,  // Will be created dynamically
+    toastContainer: null   // Will be created dynamically
 };
 
 // ==================== INITIALIZATION ====================
 function init() {
     console.log('🎵 Initializing Aurio...');
     
+    // Create modal and toast containers if they don't exist
+    createContainers();
+    
     setupBackButtonHandler();
     
-    auth.getRedirectResult()
-        .then(result => {
-            if (result.user) {
-                console.log('✅ Signed in via redirect');
-            }
-        })
-        .catch(handleAuthError);
-    
-    auth.onAuthStateChanged(onAuthStateChanged);
+    // Setup event listeners first so buttons work even if Firebase fails
     setupEventListeners();
+    
+    // Only initialize Firebase auth if it's available
+    try {
+        if (typeof auth !== 'undefined' && auth !== null) {
+            auth.getRedirectResult()
+                .then(result => {
+                    if (result.user) {
+                        console.log('✅ Signed in via redirect');
+                    }
+                })
+                .catch(handleAuthError);
+            
+            auth.onAuthStateChanged(onAuthStateChanged);
+        } else {
+            console.warn('Firebase auth not available');
+            showAuth();
+        }
+    } catch (e) {
+        console.warn('Firebase not loaded:', e);
+        showAuth();
+    }
     
     if ('mediaSession' in navigator) {
         setupMediaSession();
@@ -132,17 +160,36 @@ function init() {
     console.log('✅ Aurio initialized');
 }
 
+function createContainers() {
+    // Create modal container
+    if (!document.getElementById('modalContainer')) {
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'modalContainer';
+        document.body.appendChild(modalContainer);
+        DOM.modalContainer = modalContainer;
+    }
+    
+    // Create toast container
+    if (!document.getElementById('toastContainer')) {
+        const toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+        DOM.toastContainer = toastContainer;
+    }
+}
+
 // ==================== BACK BUTTON HANDLER ====================
 function setupBackButtonHandler() {
     window.addEventListener('popstate', (e) => {
         e.preventDefault();
         
-        if (!DOM.fullPlayer.classList.contains('hidden')) {
+        if (DOM.fullPlayer.classList.contains('active')) {
             hideFullPlayer();
             return;
         }
         
-        if (DOM.searchContainer.classList.contains('active')) {
+        if (DOM.searchContainer && DOM.searchContainer.classList.contains('active')) {
             DOM.searchContainer.classList.remove('active');
             DOM.searchInput.value = '';
             DOM.searchResults.innerHTML = '';
@@ -182,33 +229,164 @@ function onAuthStateChanged(user) {
 function showAuth() {
     DOM.authScreen.classList.add('active');
     DOM.appScreen.classList.remove('active');
+    // Reset to initial auth buttons view
+    showAuthButtons();
 }
 
 function showApp() {
     DOM.authScreen.classList.remove('active');
     DOM.appScreen.classList.add('active');
-    DOM.userAvatar.src = AppState.currentUser.photoURL || '';
-    DOM.profileAvatar.src = AppState.currentUser.photoURL || '';
-    DOM.profileName.textContent = AppState.currentUser.displayName || 'User';
-    DOM.profileEmail.textContent = AppState.currentUser.email || '';
+    // Use displayName extracted from username (stored in Firebase)
+    const displayName = AppState.currentUser.displayName || 
+                        (AppState.currentUser.email ? AppState.currentUser.email.split('@')[0] : 'User');
+    if (DOM.userAvatar) DOM.userAvatar.src = AppState.currentUser.photoURL || '';
+    if (DOM.profileAvatar) {
+        // Set avatar with first letter of username
+        DOM.profileAvatar.textContent = displayName.charAt(0).toUpperCase();
+    }
+    if (DOM.profileName) DOM.profileName.textContent = displayName;
+    if (DOM.profileEmail) DOM.profileEmail.textContent = AppState.currentUser.email || '';
 }
 
-function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+// Auth UI functions
+function showAuthButtons() {
+    DOM.authButtons.style.display = 'flex';
+    DOM.signInForm.classList.remove('active');
+    DOM.signUpForm.classList.remove('active');
+    DOM.pendingApproval.style.display = 'none';
+    clearAuthErrors();
+}
+
+function showSignInForm() {
+    DOM.authButtons.style.display = 'none';
+    DOM.signInForm.classList.add('active');
+    DOM.signUpForm.classList.remove('active');
+    clearAuthErrors();
+}
+
+function showSignUpForm() {
+    DOM.authButtons.style.display = 'none';
+    DOM.signInForm.classList.remove('active');
+    DOM.signUpForm.classList.add('active');
+    clearAuthErrors();
+}
+
+function clearAuthErrors() {
+    if (DOM.signInError) DOM.signInError.textContent = '';
+    if (DOM.signUpError) DOM.signUpError.textContent = '';
+}
+
+// Sign In with username/password
+async function handleSignIn(e) {
+    e.preventDefault();
     
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const username = DOM.signInUsername.value.trim();
+    const password = DOM.signInPassword.value;
     
-    if (isMobile) {
-        auth.signInWithRedirect(provider);
-    } else {
-        auth.signInWithPopup(provider).catch(error => {
-            if (error.code === 'auth/popup-blocked') {
-                auth.signInWithRedirect(provider);
-            } else if (error.code !== 'auth/popup-closed-by-user') {
-                handleAuthError(error);
-            }
+    if (!username || !password) {
+        DOM.signInError.textContent = 'Please fill in all fields';
+        return;
+    }
+    
+    // Convert username to email format for Firebase
+    const email = `${username}@aurio.app`;
+    
+    const submitBtn = DOM.signInForm.querySelector('.auth-submit-btn');
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        // Auth state change will handle the rest
+    } catch (error) {
+        console.error('Sign in error:', error);
+        let errorMessage = 'Sign in failed. Please try again.';
+        
+        if (error.code === 'auth/user-not-found') {
+            errorMessage = 'No account found with this username';
+        } else if (error.code === 'auth/wrong-password') {
+            errorMessage = 'Incorrect password';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid username format';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Too many attempts. Please try again later.';
+        }
+        
+        DOM.signInError.textContent = errorMessage;
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+    }
+}
+
+// Sign Up with username/password
+async function handleSignUp(e) {
+    e.preventDefault();
+    
+    const username = DOM.signUpUsername.value.trim();
+    const password = DOM.signUpPassword.value;
+    const confirmPassword = DOM.signUpConfirm.value;
+    
+    if (!username || !password || !confirmPassword) {
+        DOM.signUpError.textContent = 'Please fill in all fields';
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        DOM.signUpError.textContent = 'Passwords do not match';
+        return;
+    }
+    
+    if (password.length < 6) {
+        DOM.signUpError.textContent = 'Password must be at least 6 characters';
+        return;
+    }
+    
+    if (username.length < 3) {
+        DOM.signUpError.textContent = 'Username must be at least 3 characters';
+        return;
+    }
+    
+    // Convert username to email format for Firebase
+    const email = `${username}@aurio.app`;
+    
+    const submitBtn = DOM.signUpForm.querySelector('.auth-submit-btn');
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Update display name to username
+        await userCredential.user.updateProfile({
+            displayName: username
         });
+        
+        // Create user record in database
+        await db.ref(`users/${userCredential.user.uid}`).set({
+            username: username,
+            email: email,
+            createdAt: Date.now(),
+            approved: true // Auto-approve for now
+        });
+        
+        // Auth state change will handle the rest
+    } catch (error) {
+        console.error('Sign up error:', error);
+        let errorMessage = 'Sign up failed. Please try again.';
+        
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'This username is already taken';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid username format. Use only letters and numbers.';
+        } else if (error.code === 'auth/weak-password') {
+            errorMessage = 'Password is too weak';
+        }
+        
+        DOM.signUpError.textContent = errorMessage;
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
     }
 }
 
@@ -785,16 +963,16 @@ function seekAudio(e) {
 }
 
 function showMiniPlayer() {
-    DOM.miniPlayer.classList.remove('hidden');
+    DOM.miniPlayer.classList.add('active');
 }
 
 function showFullPlayer() {
-    DOM.fullPlayer.classList.remove('hidden');
+    DOM.fullPlayer.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 function hideFullPlayer() {
-    DOM.fullPlayer.classList.add('hidden');
+    DOM.fullPlayer.classList.remove('active');
     document.body.style.overflow = '';
 }
 
@@ -1352,8 +1530,32 @@ function resetAppState() {
 
 // ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
-    DOM.googleSignInBtn.addEventListener('click', signInWithGoogle);
-    DOM.signOutBtn.addEventListener('click', signOut);
+    // Auth button event listeners
+    if (DOM.showSignInBtn) {
+        DOM.showSignInBtn.addEventListener('click', showSignInForm);
+    }
+    if (DOM.showSignUpBtn) {
+        DOM.showSignUpBtn.addEventListener('click', showSignUpForm);
+    }
+    if (DOM.backFromSignIn) {
+        DOM.backFromSignIn.addEventListener('click', showAuthButtons);
+    }
+    if (DOM.backFromSignUp) {
+        DOM.backFromSignUp.addEventListener('click', showAuthButtons);
+    }
+    if (DOM.signInForm) {
+        DOM.signInForm.addEventListener('submit', handleSignIn);
+    }
+    if (DOM.signUpForm) {
+        DOM.signUpForm.addEventListener('submit', handleSignUp);
+    }
+    if (DOM.logoutPending) {
+        DOM.logoutPending.addEventListener('click', signOut);
+    }
+    
+    if (DOM.signOutBtn) {
+        DOM.signOutBtn.addEventListener('click', signOut);
+    }
     
     DOM.navBtns.forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -1365,17 +1567,23 @@ function setupEventListeners() {
         });
     }
     
-    DOM.searchInput.addEventListener('input', (e) => {
-        const query = e.target.value;
-        DOM.searchClear.style.display = query ? 'block' : 'none';
-        performSearch(query);
-    });
+    if (DOM.searchInput) {
+        DOM.searchInput.addEventListener('input', (e) => {
+            const query = e.target.value;
+            if (DOM.searchClear) {
+                DOM.searchClear.style.display = query ? 'block' : 'none';
+            }
+            performSearch(query);
+        });
+    }
     
-    DOM.searchClear.addEventListener('click', () => {
-        DOM.searchInput.value = '';
-        DOM.searchClear.style.display = 'none';
-        DOM.searchResults.innerHTML = '';
-    });
+    if (DOM.searchClear) {
+        DOM.searchClear.addEventListener('click', () => {
+            if (DOM.searchInput) DOM.searchInput.value = '';
+            DOM.searchClear.style.display = 'none';
+            if (DOM.searchResults) DOM.searchResults.innerHTML = '';
+        });
+    }
     
     DOM.sectionBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1409,7 +1617,9 @@ function setupEventListeners() {
         });
     }
     
-    DOM.sortSelect.addEventListener('change', renderAllSongs);
+    if (DOM.sortSelect) {
+        DOM.sortSelect.addEventListener('change', renderAllSongs);
+    }
     
     if (DOM.filterSelect) {
         DOM.filterSelect.addEventListener('change', renderAllSongs);
@@ -1421,7 +1631,7 @@ function setupEventListeners() {
             if (name && name.trim()) {
                 const uid = AppState.currentUser.uid;
                 const playlistId = Date.now().toString();
-                database.ref(`playlists/${uid}/${playlistId}`).set({
+                db.ref(`playlists/${uid}/${playlistId}`).set({
                     name: name.trim(),
                     songs: {},
                     createdAt: Date.now()
@@ -1441,47 +1651,77 @@ function setupEventListeners() {
         DOM.likedSongsToggle.addEventListener('click', toggleLikedSongs);
     }
     
-    DOM.themeToggle.addEventListener('change', (e) => {
-        AppState.settings.theme = e.target.checked ? 'dark' : 'light';
-    });
+    if (DOM.themeToggle) {
+        DOM.themeToggle.addEventListener('change', (e) => {
+            AppState.settings.theme = e.target.checked ? 'dark' : 'light';
+        });
+    }
     
-    DOM.crossfadeToggle.addEventListener('change', (e) => {
-        AppState.settings.crossfade = e.target.checked;
-    });
+    if (DOM.crossfadeToggle) {
+        DOM.crossfadeToggle.addEventListener('change', (e) => {
+            AppState.settings.crossfade = e.target.checked;
+        });
+    }
     
-    DOM.miniPlayerTap.addEventListener('click', showFullPlayer);
-    DOM.minimizePlayer.addEventListener('click', hideFullPlayer);
+    if (DOM.miniPlayerTap) {
+        DOM.miniPlayerTap.addEventListener('click', showFullPlayer);
+    }
+    if (DOM.minimizePlayer) {
+        DOM.minimizePlayer.addEventListener('click', hideFullPlayer);
+    }
     
-    DOM.playPauseBtn.addEventListener('click', togglePlayPause);
-    DOM.miniPlayPauseBtn.addEventListener('click', togglePlayPause);
-    DOM.prevBtn.addEventListener('click', playPrevious);
-    DOM.nextBtn.addEventListener('click', playNext);
-    DOM.shuffleBtn.addEventListener('click', toggleShuffle);
-    DOM.repeatBtn.addEventListener('click', toggleRepeat);
-    DOM.likeBtn.addEventListener('click', toggleLike);
+    if (DOM.playPauseBtn) {
+        DOM.playPauseBtn.addEventListener('click', togglePlayPause);
+    }
+    if (DOM.miniPlayPauseBtn) {
+        DOM.miniPlayPauseBtn.addEventListener('click', togglePlayPause);
+    }
+    if (DOM.prevBtn) {
+        DOM.prevBtn.addEventListener('click', playPrevious);
+    }
+    if (DOM.nextBtn) {
+        DOM.nextBtn.addEventListener('click', playNext);
+    }
+    if (DOM.shuffleBtn) {
+        DOM.shuffleBtn.addEventListener('click', toggleShuffle);
+    }
+    if (DOM.repeatBtn) {
+        DOM.repeatBtn.addEventListener('click', toggleRepeat);
+    }
+    if (DOM.likeBtn) {
+        DOM.likeBtn.addEventListener('click', toggleLike);
+    }
     
-    DOM.progressBar.addEventListener('input', seekAudio);
+    if (DOM.progressBar) {
+        DOM.progressBar.addEventListener('input', seekAudio);
+    }
     
-    DOM.audioPlayer.addEventListener('timeupdate', updateProgress);
-    DOM.audioPlayer.addEventListener('ended', () => {
-        if (AppState.repeat === 'one') {
-            DOM.audioPlayer.currentTime = 0;
-            DOM.audioPlayer.play();
-        } else {
-            playNext();
-        }
-    });
-    
-    DOM.audioPlayer.addEventListener('loadedmetadata', () => {
-        DOM.duration.textContent = formatTime(DOM.audioPlayer.duration);
-        DOM.progressBar.max = 100;
-    });
-    
-    DOM.audioPlayer.addEventListener('error', (e) => {
-        console.error('Audio error:', e);
-        showToast('Failed to load audio', 'error');
-        setTimeout(playNext, 1000);
-    });
+    if (DOM.audioPlayer) {
+        DOM.audioPlayer.addEventListener('timeupdate', updateProgress);
+        DOM.audioPlayer.addEventListener('ended', () => {
+            if (AppState.repeat === 'one') {
+                DOM.audioPlayer.currentTime = 0;
+                DOM.audioPlayer.play();
+            } else {
+                playNext();
+            }
+        });
+        
+        DOM.audioPlayer.addEventListener('loadedmetadata', () => {
+            if (DOM.duration) {
+                DOM.duration.textContent = formatTime(DOM.audioPlayer.duration);
+            }
+            if (DOM.progressBar) {
+                DOM.progressBar.max = 100;
+            }
+        });
+        
+        DOM.audioPlayer.addEventListener('error', (e) => {
+            console.error('Audio error:', e);
+            showToast('Failed to load audio', 'error');
+            setTimeout(playNext, 1000);
+        });
+    }
 }
 
 // ==================== START APP ====================
