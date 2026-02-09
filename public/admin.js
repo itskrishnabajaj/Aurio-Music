@@ -597,6 +597,8 @@ function editSong(songId) {
     document.getElementById('editYear').value = song.year || '';
     document.getElementById('editGenre').value = song.genre || '';
     document.getElementById('editMood').value = song.mood || '';
+    document.getElementById('editTempo').value = song.tempo || song.bpm || '';
+    document.getElementById('editDuration').value = song.duration || '';
     
     document.getElementById('editSongModal').classList.add('active');
 }
@@ -615,6 +617,7 @@ async function handleEditSong(e) {
     const year = document.getElementById('editYear').value;
     const genre = document.getElementById('editGenre').value;
     const mood = document.getElementById('editMood').value;
+    const tempo = document.getElementById('editTempo').value;
     const coverFile = document.getElementById('editCoverFile').files[0];
     
     try {
@@ -645,6 +648,12 @@ async function handleEditSong(e) {
             cover: coverUrl,
             coverUrl: coverUrl
         };
+        
+        // Add tempo/bpm if provided
+        if (tempo) {
+            updates.tempo = parseInt(tempo);
+            updates.bpm = parseInt(tempo); // Store as both for compatibility
+        }
         
         await db.ref(`songs/${songId}`).update(updates);
         
