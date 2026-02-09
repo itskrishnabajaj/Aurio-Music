@@ -727,7 +727,7 @@ function renderAllSongs() {
         }
     }
     
-    const sortedSongs = sortSongs(filteredSongs, DOM.sortSelect.value);
+    const sortedSongs = sortSongs(filteredSongs, DOM.librarySortSelect?.value || 'title-asc');
     VirtualScroll.sortedSongs = sortedSongs;
     
     // Use virtual scrolling for large lists (>100 songs)
@@ -993,6 +993,7 @@ function renderSmartPlaylists() {
         { name: 'Liked Songs', desc: `${AppState.likedSongs.size} songs`, icon: '❤️', action: 'liked' }
     ];
     
+    if (!DOM.smartPlaylists) return;
     DOM.smartPlaylists.innerHTML = playlists.map(pl => `
         <div class="smart-playlist-card" onclick="handleSmartPlaylist('${pl.action}')">
             <div class="smart-playlist-icon">${pl.icon}</div>
@@ -1676,10 +1677,12 @@ function updatePlayerUI() {
     DOM.fullArtist.textContent = song.artist;
     
     const showPause = AppState.isPlaying;
-    DOM.playIcon.style.display = showPause ? 'none' : 'block';
-    DOM.pauseIcon.style.display = showPause ? 'block' : 'none';
-    DOM.miniPlayIcon.style.display = showPause ? 'none' : 'block';
-    DOM.miniPauseIcon.style.display = showPause ? 'block' : 'none';
+    const playIconSVG = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const pauseIconSVG = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    const miniPlaySVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const miniPauseSVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    if (DOM.playPauseBtn) DOM.playPauseBtn.innerHTML = showPause ? pauseIconSVG : playIconSVG;
+    if (DOM.miniPlayPauseBtn) DOM.miniPlayPauseBtn.innerHTML = showPause ? miniPauseSVG : miniPlaySVG;
     
     DOM.likeBtn.classList.toggle('active', AppState.likedSongs.has(song.id));
     DOM.shuffleBtn.classList.toggle('active', AppState.shuffle);
@@ -1695,7 +1698,9 @@ function updateProgress() {
     DOM.currentTime.textContent = formatTime(current);
     DOM.duration.textContent = formatTime(total);
     DOM.progressBar.value = (current / total) * 100;
-    DOM.miniProgress.style.width = `${(current / total) * 100}%`;
+    DOM.miniProgress.style.setProperty('--progress', `${(current / total) * 100}%`);
+    const progressFill = document.getElementById('progressFill');
+    if (progressFill) progressFill.style.setProperty('--progress', `${(current / total) * 100}%`);
 }
 
 function seekAudio(e) {
@@ -2237,8 +2242,8 @@ function trackPlay(songId) {
 }
 
 function updateStats() {
-    DOM.statFavorites.textContent = AppState.likedSongs.size;
-    DOM.statPlaylists.textContent = AppState.playlists.length;
+    if (DOM.statFavorites) DOM.statFavorites.textContent = AppState.likedSongs.size;
+    if (DOM.statPlaylists) DOM.statPlaylists.textContent = AppState.playlists.length;
     
     let totalPlays = 0;
     let totalTime = 0;
@@ -2248,8 +2253,8 @@ function updateStats() {
         totalTime += (song.duration || 180) * (song.playCount || 0);
     });
     
-    DOM.statTotalPlays.textContent = totalPlays;
-    DOM.statListeningTime.textContent = `${Math.floor(totalTime / 3600)}h`;
+    if (DOM.statTotalPlays) DOM.statTotalPlays.textContent = totalPlays;
+    if (DOM.statListeningTime) DOM.statListeningTime.textContent = `${Math.floor(totalTime / 3600)}h`;
 }
 
 function setupMediaSession() {
