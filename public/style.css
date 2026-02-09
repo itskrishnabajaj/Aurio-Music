@@ -374,9 +374,13 @@ body {
     border-left: 3px solid var(--error);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
     animation: shake 0.4s ease, fadeIn 0.3s ease;
-    display: flex;
+    display: none;
     align-items: center;
     gap: var(--spacing-sm);
+}
+
+.error-message:not(:empty) {
+    display: flex;
 }
 
 .error-message::before {

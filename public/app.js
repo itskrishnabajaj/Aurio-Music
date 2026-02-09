@@ -436,6 +436,8 @@ async function handleSignIn(e) {
             errorMessage = 'No account found with this username';
         } else if (error.code === 'auth/wrong-password') {
             errorMessage = 'Incorrect password';
+        } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+            errorMessage = 'Invalid username or password';
         } else if (error.code === 'auth/invalid-email') {
             errorMessage = 'Username contains invalid characters';
         } else if (error.code === 'auth/too-many-requests') {
