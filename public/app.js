@@ -1028,7 +1028,6 @@ function getUserPreferences() {
     // Analyze recently played songs to build user preference profile
     const genreCount = {};
     const moodCount = {};
-    const tempoSum = { count: 0, total: 0 };
     
     AppState.recentlyPlayed.forEach(item => {
         const song = AppState.allSongs.find(s => s.id === (item.songId || item.id));
@@ -1049,18 +1048,11 @@ function getUserPreferences() {
                 moodCount[m] = (moodCount[m] || 0) + 1;
             });
         }
-        
-        // Average tempo
-        if (song.tempo) {
-            tempoSum.total += song.tempo;
-            tempoSum.count++;
-        }
     });
     
     return {
         genres: Object.entries(genreCount).sort((a, b) => b[1] - a[1]).map(e => e[0]),
-        moods: Object.entries(moodCount).sort((a, b) => b[1] - a[1]).map(e => e[0]),
-        avgTempo: tempoSum.count > 0 ? tempoSum.total / tempoSum.count : 120
+        moods: Object.entries(moodCount).sort((a, b) => b[1] - a[1]).map(e => e[0])
     };
 }
 
@@ -1096,14 +1088,6 @@ function scoreRecommendation(song, userPrefs, timeOfDay, listenedSongIds) {
                 score += (10 - moodIndex) * 3;
             }
         });
-    }
-    
-    // Tempo matching
-    if (song.tempo && userPrefs.avgTempo) {
-        const tempoDiff = Math.abs(song.tempo - userPrefs.avgTempo);
-        if (tempoDiff < 20) {
-            score += 20 - tempoDiff;
-        }
     }
     
     // Random factor for serendipity
