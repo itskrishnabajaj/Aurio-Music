@@ -608,7 +608,9 @@ function editSong(songId) {
     const genreContainer = document.getElementById('editGenre');
     const genreCheckboxes = genreContainer.querySelectorAll('input[type="checkbox"]');
     genreCheckboxes.forEach(cb => {
-        cb.checked = (song.genre && song.genre.includes(cb.value));
+        const songGenres = Array.isArray(song.genres) ? song.genres : 
+                          (typeof song.genre === 'string' ? [song.genre] : []);
+        cb.checked = songGenres.includes(cb.value);
     });
     
     // Set mood checkboxes

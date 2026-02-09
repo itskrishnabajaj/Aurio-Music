@@ -2855,7 +2855,9 @@ function performEnhancedSearch(query) {
 }
 
 function highlightMatch(text, query) {
-    const regex = new RegExp(`(${query})`, 'gi');
+    // Escape special regex characters in query
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
     return text.replace(regex, '<mark>$1</mark>');
 }
 
@@ -2979,8 +2981,10 @@ function applyLibraryFilters() {
 function renderFilteredSongs(songs) {
     if (!DOM.allSongsList) return;
     
-    DOM.allSongsList.innerHTML = songs.map((song, index) => `
-        <div class="song-item" data-letter="${song.title[0].toUpperCase()}" onclick="playSongAtIndex(${AppState.allSongs.indexOf(song)})">
+    DOM.allSongsList.innerHTML = songs.map((song, index) => {
+        const firstLetter = song.title && song.title.length > 0 ? song.title[0].toUpperCase() : '#';
+        return `
+        <div class="song-item" data-letter="${firstLetter}" onclick="playSongAtIndex(${AppState.allSongs.indexOf(song)})">
             <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/56'}" 
                  alt="${escapeHtml(song.title)}" class="song-cover">
             <div class="song-info">
@@ -2993,7 +2997,8 @@ function renderFilteredSongs(songs) {
                 </svg>
             </button>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function createAlphabetJump() {
