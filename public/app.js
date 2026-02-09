@@ -1775,6 +1775,16 @@ function switchTab(viewName, addToHistory = true) {
         updateGreeting();
         // Refresh home content
         loadHomeView();
+    } else if (viewName === 'exploreView') {
+        loadExploreView();
+    } else if (viewName === 'libraryView') {
+        if (typeof applyLibraryFilters === 'function') {
+            applyLibraryFilters();
+        }
+    } else if (viewName === 'searchView') {
+        if (typeof showRecentSearches === 'function') {
+            showRecentSearches();
+        }
     }
     
     if (addToHistory) {
@@ -2884,8 +2894,6 @@ function searchFromRecent(query) {
     }
     performEnhancedSearch(query);
 }
-    performEnhancedSearch(query);
-}
 
 function clearRecentSearches() {
     AppState.recentSearches = [];
@@ -3641,22 +3649,6 @@ function enhanceAppInit() {
     setupQueueManagement();
     setupProfileEnhancements();
     setupAlbumDetailView();
-    
-    // Load explore view on tab switch
-    const originalSwitchTab = window.switchTab;
-    window.switchTab = function(viewName, addToHistory = true) {
-        if (typeof originalSwitchTab === 'function') {
-            originalSwitchTab(viewName, addToHistory);
-        }
-        
-        if (viewName === 'exploreView') {
-            loadExploreView();
-        } else if (viewName === 'libraryView') {
-            applyLibraryFilters();
-        } else if (viewName === 'searchView') {
-            showRecentSearches();
-        }
-    };
 }
 
 // Call enhanced init after DOM loaded
@@ -3730,17 +3722,8 @@ function animatePlayerCover() {
     }
 }
 
-// Update when play state changes
-const originalTogglePlayPause = window.togglePlayPause;
-if (typeof originalTogglePlayPause === 'function') {
-    window.togglePlayPause = function() {
-        originalTogglePlayPause();
-        animatePlayerCover();
-    };
-}
-
 // ==================== HAPTIC-LIKE FEEDBACK ====================
-function hapticFeedback(type = 'light') {
+function hapticFeedback(event, type = 'light') {
     // Visual feedback for button presses
     const styles = {
         light: 'scale(0.98)',

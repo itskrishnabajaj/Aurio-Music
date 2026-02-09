@@ -251,6 +251,14 @@ function renderAnalytics() {
     
     renderTopSongs();
     renderPendingApprovals();
+    
+    // Render enhanced analytics
+    if (typeof renderGenreChart === 'function') {
+        renderGenreChart();
+    }
+    if (typeof renderUserEngagement === 'function') {
+        renderUserEngagement();
+    }
 }
 
 function renderTopSongs() {
@@ -1206,15 +1214,3 @@ async function renderUserEngagement() {
             '<tr><td colspan="5" class="empty-state">Error loading engagement data</td></tr>';
     }
 }
-
-// Update renderAnalytics to include new charts
-const originalRenderAnalytics = renderAnalytics;
-renderAnalytics = function() {
-    if (typeof originalRenderAnalytics === 'function') {
-        originalRenderAnalytics();
-    }
-    
-    // Add new analytics
-    renderGenreChart();
-    renderUserEngagement();
-};
