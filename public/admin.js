@@ -237,7 +237,10 @@ function processArtists() {
 
 function renderAnalytics() {
     const totalSongs = allSongs.length;
-    const activeUsers = allUsers.filter(u => u.approved === true).length;
+    const activeUsers = allUsers.filter(u => {
+        const status = u.status || (u.approved === true ? 'approved' : 'pending');
+        return status === 'approved';
+    }).length;
     const totalPlays = allSongs.reduce((sum, song) => sum + (song.playCount || 0), 0);
     const estimatedSize = (allSongs.length * 4).toFixed(1);
     
@@ -276,7 +279,10 @@ function renderTopSongs() {
 }
 
 function renderPendingApprovals() {
-    const pending = allUsers.filter(u => u.approved !== true);
+    const pending = allUsers.filter(u => {
+        const status = u.status || (u.approved === true ? 'approved' : 'pending');
+        return status === 'pending';
+    });
     
     // If there's a pending approvals section, update it
     const pendingContainer = document.getElementById('pendingApprovals');
@@ -973,20 +979,23 @@ function renderUsers() {
     
     container.innerHTML = allUsers.map(user => {
         const email = user.email || `${user.username}@aurio.app`;
-        const isApproved = user.approved === true;
+        // Check both status field and legacy approved field
+        const status = user.status || (user.approved === true ? 'approved' : 'pending');
+        const statusClass = status === 'approved' ? 'approved' : (status === 'rejected' ? 'rejected' : 'pending');
+        const statusLabel = status === 'approved' ? 'Approved' : (status === 'rejected' ? 'Rejected' : 'Pending');
         
         return `
             <div class="user-card">
                 <div class="user-info">
                     <div class="user-name">${escapeHtml(user.username)}</div>
                     <div class="user-email">${email}</div>
-                    <span class="user-status ${isApproved ? 'approved' : 'pending'}">
-                        ${isApproved ? 'Approved' : 'Pending Approval'}
+                    <span class="user-status ${statusClass}">
+                        ${statusLabel}
                     </span>
                 </div>
                 <div class="user-actions">
-                    ${!isApproved ? `<button class="btn-approve" onclick="approveUser('${user.id}')">Approve</button>` : ''}
-                    ${isApproved ? `<button class="btn-disable" onclick="disableUser('${user.id}')">Disable</button>` : ''}
+                    ${status !== 'approved' ? `<button class="btn-approve" onclick="approveUser('${user.id}')">Approve</button>` : ''}
+                    ${status === 'approved' ? `<button class="btn-disable" onclick="disableUser('${user.id}')">Reject</button>` : ''}
                 </div>
             </div>
         `;
@@ -995,7 +1004,11 @@ function renderUsers() {
 
 async function approveUser(userId) {
     try {
-        await db.ref(`users/${userId}/approved`).set(true);
+        // Update both status and approved fields for backwards compatibility
+        await db.ref(`users/${userId}`).update({
+            status: 'approved',
+            approved: true
+        });
         await loadUsers();
         renderUsers();
         renderAnalytics();
@@ -1006,18 +1019,22 @@ async function approveUser(userId) {
 }
 
 async function disableUser(userId) {
-    if (!confirm('Are you sure you want to disable this user?')) {
+    if (!confirm('Are you sure you want to reject this user?')) {
         return;
     }
     
     try {
-        await db.ref(`users/${userId}/approved`).set(false);
+        // Update to rejected status
+        await db.ref(`users/${userId}`).update({
+            status: 'rejected',
+            approved: false
+        });
         await loadUsers();
         renderUsers();
         renderAnalytics();
     } catch (error) {
-        console.error('Disable error:', error);
-        alert('Failed to disable user');
+        console.error('Reject error:', error);
+        alert('Failed to reject user');
     }
 }
 

@@ -785,6 +785,11 @@ body {
     color: white;
 }
 
+.user-status.rejected {
+    background: var(--danger);
+    color: white;
+}
+
 .user-actions {
     display: flex;
     gap: 8px;

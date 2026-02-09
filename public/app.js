@@ -211,14 +211,53 @@ function setupBackButtonHandler() {
 }
 
 // ==================== AUTHENTICATION ====================
-function onAuthStateChanged(user) {
+async function onAuthStateChanged(user) {
     if (user) {
         AppState.currentUser = user;
         console.log('✅ User:', user.email);
-        localStorage.setItem('aurioAuthState', 'authenticated');
-        showApp();
-        loadUserData();
-        loadSongs();
+        
+        // Check user approval status in database
+        try {
+            const userSnapshot = await db.ref(`users/${user.uid}`).once('value');
+            const userData = userSnapshot.val();
+            
+            if (!userData) {
+                // User data doesn't exist yet - create with pending status
+                await db.ref(`users/${user.uid}`).set({
+                    username: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    createdAt: Date.now(),
+                    status: 'pending'
+                });
+                showPendingApproval();
+                return;
+            }
+            
+            // Check approval status - support both 'status' field and legacy 'approved' field
+            const status = userData.status || (userData.approved === true ? 'approved' : 'pending');
+            
+            if (status === 'pending') {
+                showPendingApproval();
+                return;
+            } else if (status === 'rejected') {
+                showRejectedAccount();
+                return;
+            } else if (status === 'approved') {
+                // User is approved - proceed to app
+                localStorage.setItem('aurioAuthState', 'authenticated');
+                showApp();
+                loadUserData();
+                loadSongs();
+            } else {
+                // Unknown status - treat as pending
+                showPendingApproval();
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking user approval status:', error);
+            // On error, show auth screen
+            showAuth();
+        }
     } else {
         AppState.currentUser = null;
         localStorage.removeItem('aurioAuthState');
@@ -268,6 +307,46 @@ function showSignUpForm() {
     DOM.authButtons.style.display = 'none';
     DOM.signInForm.classList.remove('active');
     DOM.signUpForm.classList.add('active');
+    DOM.pendingApproval.style.display = 'none';
+    clearAuthErrors();
+}
+
+function showPendingApproval() {
+    DOM.authScreen.classList.add('active');
+    DOM.appScreen.classList.remove('active');
+    DOM.authButtons.style.display = 'none';
+    DOM.signInForm.classList.remove('active');
+    DOM.signUpForm.classList.remove('active');
+    DOM.pendingApproval.style.display = 'flex';
+    clearAuthErrors();
+}
+
+function showRejectedAccount() {
+    // Create rejected account container if it doesn't exist
+    let rejectedContainer = document.getElementById('rejectedAccount');
+    if (!rejectedContainer) {
+        rejectedContainer = document.createElement('div');
+        rejectedContainer.id = 'rejectedAccount';
+        rejectedContainer.className = 'pending-container';
+        rejectedContainer.innerHTML = `
+            <div class="pending-icon">❌</div>
+            <h2>Account Not Approved</h2>
+            <p>Sorry, your account request was not approved. Please contact the administrator for more information.</p>
+            <button id="logoutRejected" class="auth-action-btn secondary">Logout</button>
+        `;
+        DOM.authScreen.querySelector('.auth-container').appendChild(rejectedContainer);
+        
+        // Add logout handler for rejected screen
+        document.getElementById('logoutRejected').addEventListener('click', signOut);
+    }
+    
+    DOM.authScreen.classList.add('active');
+    DOM.appScreen.classList.remove('active');
+    DOM.authButtons.style.display = 'none';
+    DOM.signInForm.classList.remove('active');
+    DOM.signUpForm.classList.remove('active');
+    DOM.pendingApproval.style.display = 'none';
+    rejectedContainer.style.display = 'flex';
     clearAuthErrors();
 }
 
@@ -383,13 +462,13 @@ async function handleSignUp(e) {
             displayName: username
         });
         
-        // Create user record in database
+        // Create user record in database with pending status
         try {
             await db.ref(`users/${userCredential.user.uid}`).set({
                 username: username,
                 email: email,
                 createdAt: Date.now(),
-                approved: true
+                status: 'pending' // User must be approved by admin
             });
         } catch (dbError) {
             console.error('Database write error:', dbError);
