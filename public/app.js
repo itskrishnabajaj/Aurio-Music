@@ -3656,3 +3656,228 @@ if (document.readyState === 'loading') {
 
 // ==================== START APP ====================
 init();
+
+// ==================== PULL TO REFRESH ====================
+let startY = 0;
+let isPulling = false;
+
+function setupPullToRefresh() {
+    const homeView = document.getElementById('homeView');
+    if (!homeView) return;
+    
+    homeView.addEventListener('touchstart', (e) => {
+        if (homeView.scrollTop === 0) {
+            startY = e.touches[0].pageY;
+            isPulling = true;
+        }
+    }, { passive: true });
+    
+    homeView.addEventListener('touchmove', (e) => {
+        if (!isPulling) return;
+        
+        const currentY = e.touches[0].pageY;
+        const pullDistance = currentY - startY;
+        
+        if (pullDistance > 0 && homeView.scrollTop === 0) {
+            // Show pull indicator
+            if (pullDistance > 100) {
+                // Ready to refresh
+            }
+        }
+    }, { passive: true });
+    
+    homeView.addEventListener('touchend', (e) => {
+        if (isPulling) {
+            const endY = e.changedTouches[0].pageY;
+            const pullDistance = endY - startY;
+            
+            if (pullDistance > 100) {
+                // Trigger refresh
+                refreshHomeContent();
+            }
+        }
+        isPulling = false;
+        startY = 0;
+    });
+}
+
+function refreshHomeContent() {
+    showToast('Refreshing...');
+    loadHomeView();
+}
+
+// ==================== PLAYER ANIMATIONS ====================
+function animatePlayerCover() {
+    const playerCover = document.getElementById('playerCover');
+    if (!playerCover) return;
+    
+    if (AppState.isPlaying) {
+        playerCover.classList.add('playing');
+    } else {
+        playerCover.classList.remove('playing');
+    }
+}
+
+// Update when play state changes
+const originalTogglePlayPause = window.togglePlayPause;
+if (typeof originalTogglePlayPause === 'function') {
+    window.togglePlayPause = function() {
+        originalTogglePlayPause();
+        animatePlayerCover();
+    };
+}
+
+// ==================== HAPTIC-LIKE FEEDBACK ====================
+function hapticFeedback(type = 'light') {
+    // Visual feedback for button presses
+    const styles = {
+        light: 'scale(0.98)',
+        medium: 'scale(0.96)',
+        heavy: 'scale(0.94)'
+    };
+    
+    if (event && event.target) {
+        const originalTransform = event.target.style.transform;
+        event.target.style.transform = styles[type];
+        setTimeout(() => {
+            event.target.style.transform = originalTransform;
+        }, 100);
+    }
+}
+
+// ==================== KEYBOARD NAVIGATION ====================
+document.addEventListener('keydown', (e) => {
+    // Space: play/pause
+    if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.preventDefault();
+        togglePlayPause();
+    }
+    
+    // Arrow keys: next/prev
+    if (e.code === 'ArrowRight' && e.ctrlKey) {
+        e.preventDefault();
+        playNext();
+    }
+    
+    if (e.code === 'ArrowLeft' && e.ctrlKey) {
+        e.preventDefault();
+        playPrevious();
+    }
+    
+    // Escape: close modals
+    if (e.code === 'Escape') {
+        closeAllModals();
+    }
+});
+
+function closeAllModals() {
+    document.querySelectorAll('.modal.active').forEach(modal => {
+        modal.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.drawer.active').forEach(drawer => {
+        drawer.classList.remove('active');
+    });
+}
+
+// ==================== NETWORK STATUS ====================
+let wasOffline = false;
+
+window.addEventListener('online', () => {
+    if (wasOffline) {
+        showToast('Back online!');
+        wasOffline = false;
+    }
+});
+
+window.addEventListener('offline', () => {
+    showToast('You are offline');
+    wasOffline = true;
+});
+
+// ==================== VISIBILITY CHANGE ====================
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // Save state when app goes to background
+        saveAppState();
+    } else {
+        // Refresh data when app comes to foreground
+        if (AppState.currentUser) {
+            checkForUpdates();
+        }
+    }
+});
+
+function saveAppState() {
+    try {
+        localStorage.setItem('aurioState', JSON.stringify({
+            currentSongId: AppState.currentSong?.id,
+            currentTime: DOM.audioPlayer?.currentTime || 0,
+            isPlaying: AppState.isPlaying,
+            shuffle: AppState.shuffle,
+            repeat: AppState.repeat
+        }));
+    } catch (e) {
+        console.error('Failed to save state:', e);
+    }
+}
+
+function restoreAppState() {
+    try {
+        const saved = localStorage.getItem('aurioState');
+        if (saved) {
+            const state = JSON.parse(saved);
+            if (state.currentSongId) {
+                // Optionally restore playback
+            }
+        }
+    } catch (e) {
+        console.error('Failed to restore state:', e);
+    }
+}
+
+function checkForUpdates() {
+    // Check if new songs or data available
+    database.ref('songs').once('value', snapshot => {
+        const songCount = snapshot.numChildren();
+        if (songCount !== AppState.allSongs.length) {
+            showToast('New music available!');
+        }
+    });
+}
+
+// ==================== ENHANCED ERROR HANDLING ====================
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+    // Don't show errors to user unless critical
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise rejection:', e.reason);
+    // Log but don't disrupt user experience
+});
+
+// ==================== PERFORMANCE MONITORING ====================
+if ('performance' in window && 'PerformanceObserver' in window) {
+    const perfObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+            // Log slow operations
+            if (entry.duration > 1000) {
+                console.warn(`Slow operation: ${entry.name} took ${entry.duration}ms`);
+            }
+        }
+    });
+    
+    try {
+        perfObserver.observe({ entryTypes: ['measure', 'navigation'] });
+    } catch (e) {
+        // Observer not supported
+    }
+}
+
+// ==================== INITIALIZE ENHANCEMENTS ====================
+setTimeout(() => {
+    setupPullToRefresh();
+    restoreAppState();
+}, 500);
+
