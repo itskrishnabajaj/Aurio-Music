@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Scroll Test - Aurio Music</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            height: 80vh;
+            overflow-y: auto;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .test-header {
+            margin-bottom: 20px;
+        }
+        .test-stats {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-stats div {
+            margin-bottom: 8px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background: #6a5acd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #7b68ee;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Virtual Scrolling Test</h1>
+            <p>Testing with 3000+ songs</p>
+        </div>
+        
+        <div class="test-stats">
+            <div>Total Songs: <span id="totalSongs">0</span></div>
+            <div>Rendered Items: <span id="renderedItems">0</span></div>
+            <div>DOM Elements: <span id="domElements">0</span></div>
+            <div>Scroll Position: <span id="scrollPos">0</span>px</div>
+        </div>
+        
+        <div class="controls">
+            <button id="generate100">100 Songs</button>
+            <button id="generate1000">1,000 Songs</button>
+            <button id="generate3000">3,000 Songs</button>
+            <button id="scrollToMiddle">Scroll to Middle</button>
+        </div>
+        
+        <div id="allSongsList" class="song-list" style="height: 500px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        // Mock Firebase and required functions
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
+        const showToast = (msg) => console.log(msg);
+        const showSongMenu = (id) => console.log('Menu:', id);
+        const playSongAtIndex = (idx, songs) => console.log('Play:', idx);
+
+        // Mock AppState
+        const AppState = {
+            allSongs: [],
+            currentTab: 'libraryView'
+        };
+
+        const DOM = {
+            allSongsList: document.getElementById('allSongsList'),
+            sortSelect: { value: 'title' },
+            filterSelect: null
+        };
+
+        // Include virtual scroll code
+        const VirtualScroll = {
+            itemHeight: 76,
+            bufferSize: 25,
+            batchSize: 50,
+            currentStart: 0,
+            currentEnd: 50,
+            observer: null,
+            sortedSongs: [],
+            isRendering: false
+        };
+
+        // Generate mock songs
+        function generateMockSongs(count) {
+            const artists = ['Taylor Swift', 'Drake', 'The Weeknd', 'Ariana Grande', 'Ed Sheeran', 'Billie Eilish', 'Post Malone'];
+            const titles = ['Summer', 'Night', 'Love', 'Dreams', 'Fire', 'Rain', 'Stars', 'Moonlight', 'Sunset', 'Paradise'];
+            
+            return Array.from({ length: count }, (_, i) => ({
+                id: `song_${i}`,
+                title: `${titles[i % titles.length]} ${Math.floor(i / titles.length) + 1}`,
+                artist: artists[i % artists.length],
+                cover: `https://via.placeholder.com/56?text=S${i}`,
+                playCount: Math.floor(Math.random() * 1000)
+            }));
+        }
+
+        function sortSongs(songs, sortBy) {
+            return [...songs].sort((a, b) => a.title.localeCompare(b.title));
+        }
+
+        // Copy renderAllSongs and helper functions from app.js
+        function renderAllSongs() {
+            if (AppState.allSongs.length === 0) {
+                DOM.allSongsList.innerHTML = '<div class="empty-state"><p>No songs yet</p></div>';
+                return;
+            }
+            
+            const sortedSongs = sortSongs(AppState.allSongs, 'title');
+            VirtualScroll.sortedSongs = sortedSongs;
+            
+            if (sortedSongs.length > 100) {
+                renderVirtualSongList(sortedSongs);
+            } else {
+                renderFullSongList(sortedSongs);
+            }
+            
+            updateStats();
+        }
+
+        function renderFullSongList(sortedSongs) {
+            DOM.allSongsList.innerHTML = sortedSongs.map((song, index) => 
+                createSongItemHTML(song, index)
+            ).join('');
+            attachSongListeners();
+        }
+
+        function renderVirtualSongList(sortedSongs) {
+            if (VirtualScroll.isRendering) return;
+            VirtualScroll.isRendering = true;
+            
+            if (VirtualScroll.observer) {
+                VirtualScroll.observer.disconnect();
+            }
+            
+            const totalHeight = sortedSongs.length * VirtualScroll.itemHeight;
+            
+            DOM.allSongsList.innerHTML = `
+                <div class="virtual-scroll-container" style="height: ${totalHeight}px; position: relative;">
+                    <div class="virtual-scroll-content" style="position: absolute; top: 0; left: 0; right: 0;"></div>
+                </div>
+            `;
+            
+            const container = DOM.allSongsList.querySelector('.virtual-scroll-content');
+            
+            VirtualScroll.currentStart = 0;
+            VirtualScroll.currentEnd = Math.min(VirtualScroll.batchSize, sortedSongs.length);
+            renderBatch(container, sortedSongs, VirtualScroll.currentStart, VirtualScroll.currentEnd);
+            
+            setupIntersectionObserver(container, sortedSongs);
+            
+            VirtualScroll.isRendering = false;
+        }
+
+        function renderBatch(container, sortedSongs, start, end) {
+            const fragment = document.createDocumentFragment();
+            
+            for (let i = start; i < end; i++) {
+                const song = sortedSongs[i];
+                const div = document.createElement('div');
+                div.className = 'song-item';
+                div.style.transform = `translateY(${i * VirtualScroll.itemHeight}px)`;
+                div.style.position = 'absolute';
+                div.style.width = '100%';
+                div.dataset.index = i;
+                div.dataset.songId = song.id;
+                div.innerHTML = `
+                    <img src="${song.cover}" alt="${escapeHtml(song.title)}" class="song-cover">
+                    <div class="song-info">
+                        <div class="song-title">${escapeHtml(song.title)}</div>
+                        <div class="song-artist">${escapeHtml(song.artist)}</div>
+                    </div>
+                    <button class="song-menu-btn" data-song-id="${song.id}">⋮</button>
+                `;
+                fragment.appendChild(div);
+            }
+            
+            container.innerHTML = '';
+            container.appendChild(fragment);
+            attachSongListeners();
+            updateStats();
+        }
+
+        function setupIntersectionObserver(container, sortedSongs) {
+            const topSentinel = document.createElement('div');
+            topSentinel.className = 'virtual-scroll-sentinel top';
+            topSentinel.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 1px;';
+            
+            const bottomSentinel = document.createElement('div');
+            bottomSentinel.className = 'virtual-scroll-sentinel bottom';
+            bottomSentinel.style.cssText = `position: absolute; top: ${sortedSongs.length * VirtualScroll.itemHeight - 1}px; left: 0; width: 100%; height: 1px;`;
+            
+            container.parentElement.appendChild(topSentinel);
+            container.parentElement.appendChild(bottomSentinel);
+            
+            const observerCallback = (entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    
+                    const scrollTop = DOM.allSongsList.scrollTop || 0;
+                    const startIndex = Math.floor(scrollTop / VirtualScroll.itemHeight);
+                    const visibleStart = Math.max(0, startIndex - VirtualScroll.bufferSize);
+                    const visibleEnd = Math.min(
+                        sortedSongs.length,
+                        startIndex + VirtualScroll.batchSize + VirtualScroll.bufferSize
+                    );
+                    
+                    if (Math.abs(visibleStart - VirtualScroll.currentStart) > VirtualScroll.bufferSize / 2 ||
+                        Math.abs(visibleEnd - VirtualScroll.currentEnd) > VirtualScroll.bufferSize / 2) {
+                        
+                        VirtualScroll.currentStart = visibleStart;
+                        VirtualScroll.currentEnd = visibleEnd;
+                        
+                        requestAnimationFrame(() => {
+                            renderBatch(container, sortedSongs, visibleStart, visibleEnd);
+                        });
+                    }
+                });
+            };
+            
+            VirtualScroll.observer = new IntersectionObserver(observerCallback, {
+                root: DOM.allSongsList,
+                rootMargin: '200px 0px',
+                threshold: 0
+            });
+            
+            VirtualScroll.observer.observe(topSentinel);
+            VirtualScroll.observer.observe(bottomSentinel);
+            
+            let scrollTimeout;
+            const scrollHandler = () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    observerCallback([{ isIntersecting: true }]);
+                    updateStats();
+                }, 100);
+            };
+            
+            DOM.allSongsList.removeEventListener('scroll', scrollHandler);
+            DOM.allSongsList.addEventListener('scroll', scrollHandler, { passive: true });
+        }
+
+        function createSongItemHTML(song, index) {
+            return `
+                <div class="song-item" data-index="${index}" data-song-id="${song.id}">
+                    <img src="${song.cover}" alt="${escapeHtml(song.title)}" class="song-cover">
+                    <div class="song-info">
+                        <div class="song-title">${escapeHtml(song.title)}</div>
+                        <div class="song-artist">${escapeHtml(song.artist)}</div>
+                    </div>
+                    <button class="song-menu-btn" data-song-id="${song.id}">⋮</button>
+                </div>
+            `;
+        }
+
+        function attachSongListeners() {
+            DOM.allSongsList.querySelectorAll('.song-item').forEach((item) => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.song-menu-btn')) {
+                        const index = parseInt(item.dataset.index);
+                        playSongAtIndex(index, VirtualScroll.sortedSongs);
+                    }
+                });
+            });
+            
+            DOM.allSongsList.querySelectorAll('.song-menu-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showSongMenu(btn.dataset.songId);
+                });
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('totalSongs').textContent = AppState.allSongs.length;
+            document.getElementById('renderedItems').textContent = VirtualScroll.currentEnd - VirtualScroll.currentStart;
+            document.getElementById('domElements').textContent = document.querySelectorAll('.song-item').length;
+            document.getElementById('scrollPos').textContent = Math.round(DOM.allSongsList.scrollTop || 0);
+        }
+
+        // Event listeners
+        document.getElementById('generate100').addEventListener('click', () => {
+            AppState.allSongs = generateMockSongs(100);
+            renderAllSongs();
+        });
+
+        document.getElementById('generate1000').addEventListener('click', () => {
+            AppState.allSongs = generateMockSongs(1000);
+            renderAllSongs();
+        });
+
+        document.getElementById('generate3000').addEventListener('click', () => {
+            AppState.allSongs = generateMockSongs(3000);
+            renderAllSongs();
+        });
+
+        document.getElementById('scrollToMiddle').addEventListener('click', () => {
+            const container = DOM.allSongsList.querySelector('.virtual-scroll-container') || DOM.allSongsList;
+            const middlePos = container.scrollHeight / 2;
+            DOM.allSongsList.scrollTop = middlePos;
+        });
+
+        // Initial render
+        AppState.allSongs = generateMockSongs(100);
+        renderAllSongs();
+    </script>
+</body>
+</html>

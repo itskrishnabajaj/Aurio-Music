@@ -646,6 +646,19 @@ async function loadArtistMetadata() {
     }
 }
 
+// ==================== VIRTUAL SCROLLING ====================
+// Virtual scrolling state management
+const VirtualScroll = {
+    itemHeight: 76, // Height of each song item (56px image + padding)
+    bufferSize: 25, // Number of items to render before and after visible area
+    batchSize: 50, // Total items rendered at once (visible + buffer)
+    currentStart: 0,
+    currentEnd: 50,
+    observer: null,
+    sortedSongs: [],
+    isRendering: false
+};
+
 // ==================== RENDERING ====================
 function renderAllSongs() {
     if (AppState.allSongs.length === 0) {
@@ -674,8 +687,180 @@ function renderAllSongs() {
     }
     
     const sortedSongs = sortSongs(filteredSongs, DOM.sortSelect.value);
+    VirtualScroll.sortedSongs = sortedSongs;
     
-    DOM.allSongsList.innerHTML = sortedSongs.map((song, index) => `
+    // Use virtual scrolling for large lists (>100 songs)
+    if (sortedSongs.length > 100) {
+        renderVirtualSongList(sortedSongs);
+    } else {
+        // For small lists, render all at once (no performance issues)
+        renderFullSongList(sortedSongs);
+    }
+}
+
+// Render small song lists (no virtual scrolling needed)
+function renderFullSongList(sortedSongs) {
+    DOM.allSongsList.innerHTML = sortedSongs.map((song, index) => 
+        createSongItemHTML(song, index)
+    ).join('');
+    
+    attachSongListeners();
+}
+
+// Virtual scrolling implementation for large song lists
+function renderVirtualSongList(sortedSongs) {
+    if (VirtualScroll.isRendering) return;
+    VirtualScroll.isRendering = true;
+    
+    // Clean up existing observer
+    if (VirtualScroll.observer) {
+        VirtualScroll.observer.disconnect();
+    }
+    
+    // Calculate total height for scrolling
+    const totalHeight = sortedSongs.length * VirtualScroll.itemHeight;
+    
+    // Create container with proper height for scrolling
+    DOM.allSongsList.innerHTML = `
+        <div class="virtual-scroll-container" style="height: ${totalHeight}px; position: relative;">
+            <div class="virtual-scroll-content" style="position: absolute; top: 0; left: 0; right: 0;"></div>
+        </div>
+    `;
+    
+    const container = DOM.allSongsList.querySelector('.virtual-scroll-content');
+    
+    // Initial render of first batch
+    VirtualScroll.currentStart = 0;
+    VirtualScroll.currentEnd = Math.min(VirtualScroll.batchSize, sortedSongs.length);
+    renderBatch(container, sortedSongs, VirtualScroll.currentStart, VirtualScroll.currentEnd);
+    
+    // Setup Intersection Observer for lazy loading
+    setupIntersectionObserver(container, sortedSongs);
+    
+    VirtualScroll.isRendering = false;
+}
+
+// Render a batch of songs
+function renderBatch(container, sortedSongs, start, end) {
+    const fragment = document.createDocumentFragment();
+    const offset = start * VirtualScroll.itemHeight;
+    
+    for (let i = start; i < end; i++) {
+        const song = sortedSongs[i];
+        const div = document.createElement('div');
+        div.className = 'song-item';
+        div.style.transform = `translateY(${i * VirtualScroll.itemHeight}px)`;
+        div.style.position = 'absolute';
+        div.style.width = '100%';
+        div.dataset.index = i;
+        div.dataset.songId = song.id;
+        div.dataset.virtualIndex = i;
+        div.innerHTML = `
+            <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/56'}" 
+                 alt="${escapeHtml(song.title)}" 
+                 class="song-cover"
+                 onerror="this.src='https://via.placeholder.com/56?text=♪'">
+            <div class="song-info">
+                <div class="song-title">${escapeHtml(song.title)}</div>
+                <div class="song-artist">${escapeHtml(song.artist)}</div>
+            </div>
+            <button class="song-menu-btn" data-song-id="${song.id}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                </svg>
+            </button>
+        `;
+        fragment.appendChild(div);
+    }
+    
+    container.innerHTML = '';
+    container.appendChild(fragment);
+    attachSongListeners();
+}
+
+// Setup Intersection Observer for detecting when to load more items
+function setupIntersectionObserver(container, sortedSongs) {
+    // Get the scrollable container (#mainContent is the scrollable element)
+    const scrollContainer = document.getElementById('mainContent');
+    if (!scrollContainer) return;
+    
+    // Create sentinel elements at top and bottom
+    const topSentinel = document.createElement('div');
+    topSentinel.className = 'virtual-scroll-sentinel top';
+    topSentinel.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 1px;';
+    
+    const bottomSentinel = document.createElement('div');
+    bottomSentinel.className = 'virtual-scroll-sentinel bottom';
+    bottomSentinel.style.cssText = `position: absolute; top: ${sortedSongs.length * VirtualScroll.itemHeight - 1}px; left: 0; width: 100%; height: 1px;`;
+    
+    container.parentElement.appendChild(topSentinel);
+    container.parentElement.appendChild(bottomSentinel);
+    
+    // Observer callback - calculates which items to render based on scroll position
+    const observerCallback = (entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            
+            // Get scroll position and container metrics
+            const scrollTop = scrollContainer.scrollTop;
+            const containerRect = container.parentElement.getBoundingClientRect();
+            const scrollContainerRect = scrollContainer.getBoundingClientRect();
+            
+            // Calculate offset from parent to account for view-header
+            const offsetTop = containerRect.top - scrollContainerRect.top + scrollTop;
+            const relativeScrollTop = Math.max(0, scrollTop - offsetTop);
+            
+            // Calculate which items should be visible
+            const startIndex = Math.floor(relativeScrollTop / VirtualScroll.itemHeight);
+            const visibleStart = Math.max(0, startIndex - VirtualScroll.bufferSize);
+            const visibleEnd = Math.min(
+                sortedSongs.length,
+                startIndex + VirtualScroll.batchSize + VirtualScroll.bufferSize
+            );
+            
+            // Only re-render if the range has changed significantly (debounce)
+            if (Math.abs(visibleStart - VirtualScroll.currentStart) > VirtualScroll.bufferSize / 2 ||
+                Math.abs(visibleEnd - VirtualScroll.currentEnd) > VirtualScroll.bufferSize / 2) {
+                
+                VirtualScroll.currentStart = visibleStart;
+                VirtualScroll.currentEnd = visibleEnd;
+                
+                // Use requestAnimationFrame for smooth 60fps rendering
+                requestAnimationFrame(() => {
+                    renderBatch(container, sortedSongs, visibleStart, visibleEnd);
+                });
+            }
+        });
+    };
+    
+    // Create observer with optimized options for performance
+    VirtualScroll.observer = new IntersectionObserver(observerCallback, {
+        root: scrollContainer,
+        rootMargin: '200px 0px', // Start loading 200px before entering viewport
+        threshold: 0
+    });
+    
+    // Observe sentinels
+    VirtualScroll.observer.observe(topSentinel);
+    VirtualScroll.observer.observe(bottomSentinel);
+    
+    // Add scroll event listener for smoother updates between intersection events
+    let scrollTimeout;
+    const scrollHandler = () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            observerCallback([{ isIntersecting: true }]);
+        }, 100); // Debounce scroll events
+    };
+    
+    // Clean up old listener and add new one
+    scrollContainer.removeEventListener('scroll', scrollHandler);
+    scrollContainer.addEventListener('scroll', scrollHandler, { passive: true });
+}
+
+// Helper to create song item HTML
+function createSongItemHTML(song, index) {
+    return `
         <div class="song-item" data-index="${index}" data-song-id="${song.id}">
             <img src="${song.cover || song.coverUrl || 'https://via.placeholder.com/56'}" 
                  alt="${escapeHtml(song.title)}" 
@@ -691,13 +876,16 @@ function renderAllSongs() {
                 </svg>
             </button>
         </div>
-    `).join('');
-    
+    `;
+}
+
+// Attach event listeners to song items
+function attachSongListeners() {
     DOM.allSongsList.querySelectorAll('.song-item').forEach((item) => {
         item.addEventListener('click', (e) => {
             if (!e.target.closest('.song-menu-btn')) {
                 const index = parseInt(item.dataset.index);
-                playSongAtIndex(index, sortedSongs);
+                playSongAtIndex(index, VirtualScroll.sortedSongs.length > 0 ? VirtualScroll.sortedSongs : AppState.allSongs);
             }
         });
     });

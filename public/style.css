@@ -588,6 +588,23 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    overflow-y: auto;
+    will-change: scroll-position;
+}
+
+/* Virtual scrolling container */
+.virtual-scroll-container {
+    position: relative;
+    width: 100%;
+    overflow: visible;
+}
+
+.virtual-scroll-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    will-change: transform;
 }
 
 .song-item {
@@ -600,6 +617,7 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid transparent;
+    will-change: transform;
 }
 
 .song-item:hover {
@@ -608,7 +626,7 @@ body {
 }
 
 .song-item:active {
-    transform: scale(0.98);
+    transform: scale(0.98) !important;
 }
 
 .song-item img {
