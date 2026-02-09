@@ -658,7 +658,8 @@ const VirtualScroll = {
     sortedSongs: [],
     isRendering: false,
     scrollHandler: null, // Store scroll handler reference for cleanup
-    pendingAnimationFrame: null // Track pending animation frames
+    pendingAnimationFrame: null, // Track pending animation frames
+    scrollTimeout: null // Track scroll debounce timeout
 };
 
 // ==================== RENDERING ====================
@@ -726,6 +727,12 @@ function renderVirtualSongList(sortedSongs) {
     if (VirtualScroll.pendingAnimationFrame) {
         cancelAnimationFrame(VirtualScroll.pendingAnimationFrame);
         VirtualScroll.pendingAnimationFrame = null;
+    }
+    
+    // Clear any pending scroll timeout
+    if (VirtualScroll.scrollTimeout) {
+        clearTimeout(VirtualScroll.scrollTimeout);
+        VirtualScroll.scrollTimeout = null;
     }
     
     // Clean up existing observer
@@ -872,10 +879,9 @@ function setupIntersectionObserver(container, sortedSongs) {
     VirtualScroll.observer.observe(bottomSentinel);
     
     // Add scroll event listener for smoother updates between intersection events
-    let scrollTimeout;
     VirtualScroll.scrollHandler = () => {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
+        clearTimeout(VirtualScroll.scrollTimeout);
+        VirtualScroll.scrollTimeout = setTimeout(() => {
             observerCallback([{ isIntersecting: true }]);
         }, 100); // Debounce scroll events
     };
