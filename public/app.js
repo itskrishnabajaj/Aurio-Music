@@ -879,11 +879,14 @@ function createSongItemHTML(song, index) {
 
 // Attach event listeners to song items
 function attachSongListeners() {
+    // Use sortedSongs if available (from virtual/full render), otherwise fall back to all songs
+    const songsList = VirtualScroll.sortedSongs.length > 0 ? VirtualScroll.sortedSongs : AppState.allSongs;
+    
     DOM.allSongsList.querySelectorAll('.song-item').forEach((item) => {
         item.addEventListener('click', (e) => {
             if (!e.target.closest('.song-menu-btn')) {
                 const index = parseInt(item.dataset.index);
-                playSongAtIndex(index, VirtualScroll.sortedSongs.length > 0 ? VirtualScroll.sortedSongs : AppState.allSongs);
+                playSongAtIndex(index, songsList);
             }
         });
     });
