@@ -1097,12 +1097,21 @@ function renderHomePlaylists() {
     container.innerHTML = AppState.playlists.slice(0, 10).map(playlist => {
         const songs = playlist.songs || {};
         const songCount = typeof songs === 'object' ? Object.keys(songs).length : 0;
-        const coverSong = Object.values(songs)[0];
-        const cover = coverSong ? (AppState.allSongs.find(s => s.id === coverSong)?.cover || '') : '';
+        
+        // Get first song for cover image
+        let cover = 'https://via.placeholder.com/160';
+        const songIds = Object.keys(songs);
+        if (songIds.length > 0) {
+            const firstSongId = songIds[0];
+            const coverSong = AppState.allSongs.find(s => s.id === firstSongId);
+            if (coverSong && coverSong.cover) {
+                cover = coverSong.cover;
+            }
+        }
         
         return `
             <div class="song-card" onclick="openPlaylist('${playlist.id}')">
-                <img src="${cover || 'https://via.placeholder.com/160'}" 
+                <img src="${cover}" 
                      alt="${escapeHtml(playlist.name)}">
                 <div class="song-card-info">
                     <div class="song-card-title">${escapeHtml(playlist.name)}</div>

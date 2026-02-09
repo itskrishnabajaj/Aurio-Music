@@ -29,7 +29,7 @@ const sampleData = require('./sample-songs-data.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://aurio-music-app-default-rtdb.asia-southeast1.firebasedatabase.app'
+  databaseURL: 'https://your-project-id-default-rtdb.region.firebasedatabase.app'
 });
 
 const db = admin.database();
