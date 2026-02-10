@@ -3,7 +3,7 @@
 
 const ADMIN_PASSWORD = 'admin123';
 
-// db is already initialized in firebase.js
+// db is a global variable initialized in firebase.js (loaded before this script)
 
 let allSongs = [];
 let allUsers = [];
