@@ -287,6 +287,7 @@ body {
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 24px;
+    margin-bottom: 24px;
 }
 
 .analytics-section h3 {

@@ -1705,10 +1705,17 @@ function updateProgress() {
     
     if (isNaN(current) || isNaN(total)) return;
     
+    const percent = (current / total) * 100;
     DOM.currentTime.textContent = formatTime(current);
     DOM.duration.textContent = formatTime(total);
-    DOM.progressBar.value = (current / total) * 100;
-    DOM.miniProgress.style.width = `${(current / total) * 100}%`;
+    DOM.progressBar.value = percent;
+    DOM.miniProgress.style.width = `${percent}%`;
+    
+    // Update visual progress fill
+    const progressFill = document.getElementById('progressFill');
+    if (progressFill) {
+        progressFill.style.width = `${percent}%`;
+    }
 }
 
 function seekAudio(e) {
