@@ -3673,8 +3673,8 @@ async function handleChangePassword(e) {
         showToast('Password changed successfully!');
     } catch (error) {
         console.error('Password change failed:', error);
-        if (error.code === 'auth/wrong-password') {
-            errorEl.textContent = 'Current password is incorrect';
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            errorEl.textContent = 'Authentication failed. Please check your current password.';
         } else {
             errorEl.textContent = 'Failed to change password. Please try again.';
         }
