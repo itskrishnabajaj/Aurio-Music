@@ -151,6 +151,7 @@ const DOM = {
     editNameBtn: document.getElementById('editNameBtn'),
     statFavoriteGenre: document.getElementById('statFavoriteGenre'),
     userPlaylistsGrid: document.getElementById('userPlaylistsGrid'),
+    passwordModal: document.getElementById('passwordModal'),
     createPlaylistModal: document.getElementById('createPlaylistModal'),
     editPlaylistModal: document.getElementById('editPlaylistModal'),
     addToPlaylistModal: document.getElementById('addToPlaylistModal'),
@@ -1704,10 +1705,17 @@ function updateProgress() {
     
     if (isNaN(current) || isNaN(total)) return;
     
+    const percent = (current / total) * 100;
     DOM.currentTime.textContent = formatTime(current);
     DOM.duration.textContent = formatTime(total);
-    DOM.progressBar.value = (current / total) * 100;
-    DOM.miniProgress.style.width = `${(current / total) * 100}%`;
+    DOM.progressBar.value = percent;
+    DOM.miniProgress.style.width = `${percent}%`;
+    
+    // Update visual progress fill
+    const progressFill = document.getElementById('progressFill');
+    if (progressFill) {
+        progressFill.style.width = `${percent}%`;
+    }
 }
 
 function seekAudio(e) {
@@ -2541,6 +2549,54 @@ function setupEventListeners() {
             document.getElementById('artistView').classList.remove('active');
             switchTab('homeView', false);
         });
+    }
+    
+    // Password modal
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', showPasswordModal);
+    }
+    const closePasswordModal = document.getElementById('closePasswordModal');
+    if (closePasswordModal) {
+        closePasswordModal.addEventListener('click', hidePasswordModal);
+    }
+    const cancelPassword = document.getElementById('cancelPassword');
+    if (cancelPassword) {
+        cancelPassword.addEventListener('click', hidePasswordModal);
+    }
+    const passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', handleChangePassword);
+    }
+    
+    // Modal close buttons
+    const closeCreatePlaylistModal = document.getElementById('closeCreatePlaylistModal');
+    if (closeCreatePlaylistModal) {
+        closeCreatePlaylistModal.addEventListener('click', hideCreatePlaylistModal);
+    }
+    const cancelCreatePlaylist = document.getElementById('cancelCreatePlaylist');
+    if (cancelCreatePlaylist) {
+        cancelCreatePlaylist.addEventListener('click', hideCreatePlaylistModal);
+    }
+    const closeEditPlaylistModal = document.getElementById('closeEditPlaylistModal');
+    if (closeEditPlaylistModal) {
+        closeEditPlaylistModal.addEventListener('click', hideEditPlaylistModal);
+    }
+    const cancelEditPlaylist = document.getElementById('cancelEditPlaylist');
+    if (cancelEditPlaylist) {
+        cancelEditPlaylist.addEventListener('click', hideEditPlaylistModal);
+    }
+    const closeAddToPlaylistModal = document.getElementById('closeAddToPlaylistModal');
+    if (closeAddToPlaylistModal) {
+        closeAddToPlaylistModal.addEventListener('click', hideAddToPlaylistModal);
+    }
+    const closeEditNameModal = document.getElementById('closeEditNameModal');
+    if (closeEditNameModal) {
+        closeEditNameModal.addEventListener('click', hideEditNameModal);
+    }
+    const cancelEditName = document.getElementById('cancelEditName');
+    if (cancelEditName) {
+        cancelEditName.addEventListener('click', hideEditNameModal);
     }
 }
 
@@ -3578,6 +3634,58 @@ async function handleEditName(e) {
     
     hideEditNameModal();
     showToast('Name updated!');
+}
+
+function showPasswordModal() {
+    if (DOM.passwordModal) {
+        DOM.passwordModal.classList.add('active');
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+        document.getElementById('passwordError').textContent = '';
+    }
+}
+
+function hidePasswordModal() {
+    if (DOM.passwordModal) {
+        DOM.passwordModal.classList.remove('active');
+    }
+}
+
+async function handleChangePassword(e) {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+    const errorEl = document.getElementById('passwordError');
+    
+    if (newPassword !== confirmNewPassword) {
+        errorEl.textContent = 'New passwords do not match';
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters';
+        return;
+    }
+    
+    try {
+        const user = auth.currentUser;
+        const email = user.email;
+        const credential = firebase.auth.EmailAuthProvider.credential(email, currentPassword);
+        await user.reauthenticateWithCredential(credential);
+        await user.updatePassword(newPassword);
+        hidePasswordModal();
+        showToast('Password changed successfully!');
+    } catch (error) {
+        console.error('Password change failed:', error);
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            errorEl.textContent = 'Authentication failed. Please check your current password.';
+        } else {
+            errorEl.textContent = 'Failed to change password. Please try again.';
+        }
+    }
 }
 
 function updateProfileStats() {

@@ -3,18 +3,7 @@
 
 const ADMIN_PASSWORD = 'admin123';
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCMY1H6-QLhtUfo6J42Al3DkfAkd1b6qcE",
-    authDomain: "aurio-music-app.firebaseapp.com",
-    databaseURL: "https://aurio-music-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "aurio-music-app",
-    storageBucket: "aurio-music-app.firebasestorage.app",
-    messagingSenderId: "849403275884",
-    appId: "1:849403275884:web:79a001b4cc1837c2260649"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// db is a global variable initialized in firebase.js (loaded before this script)
 
 let allSongs = [];
 let allUsers = [];
@@ -117,7 +106,7 @@ async function loadAllData() {
     ]);
     
     // Process artists after songs are loaded
-    processArtists();
+    await processArtists();
     
     console.log(`Loaded: ${allSongs.length} songs, ${allUsers.length} users, ${allArtists.length} artists`);
     
@@ -198,40 +187,55 @@ function loadPlaylists() {
 }
 
 function processArtists() {
-    const artistData = {};
-    
-    allSongs.forEach(song => {
-        if (song.artist) {
-            if (!artistData[song.artist]) {
-                artistData[song.artist] = {
-                    name: song.artist,
-                    songs: [],
-                    totalPlays: 0
-                };
-            }
-            artistData[song.artist].songs.push(song);
-            artistData[song.artist].totalPlays += (song.playCount || 0);
-        }
-    });
-    
-    // Load artist profiles from database
-    db.ref('artists').once('value', (snapshot) => {
-        const profiles = snapshot.val() || {};
+    return new Promise((resolve) => {
+        const artistData = {};
         
-        allArtists = Object.keys(artistData).map(name => {
-            const key = encodeArtistKey(name);
-            const profile = profiles[key] || {};
-            return {
+        allSongs.forEach(song => {
+            if (song.artist) {
+                if (!artistData[song.artist]) {
+                    artistData[song.artist] = {
+                        name: song.artist,
+                        songs: [],
+                        totalPlays: 0
+                    };
+                }
+                artistData[song.artist].songs.push(song);
+                artistData[song.artist].totalPlays += (song.playCount || 0);
+            }
+        });
+        
+        // Load artist profiles from database
+        db.ref('artists').once('value', (snapshot) => {
+            const profiles = snapshot.val() || {};
+            
+            allArtists = Object.keys(artistData).map(name => {
+                const key = encodeArtistKey(name);
+                const profile = profiles[key] || {};
+                return {
+                    name,
+                    songCount: artistData[name].songs.length,
+                    totalPlays: artistData[name].totalPlays,
+                    cover: profile.cover || '',
+                    bio: profile.bio || '',
+                    genres: profile.genres || []
+                };
+            });
+            
+            console.log('Artists processed:', allArtists.length);
+            resolve();
+        }, (error) => {
+            console.error('Error loading artist profiles:', error);
+            // Still populate artists from song data even if profiles fail
+            allArtists = Object.keys(artistData).map(name => ({
                 name,
                 songCount: artistData[name].songs.length,
                 totalPlays: artistData[name].totalPlays,
-                cover: profile.cover || '',
-                bio: profile.bio || '',
-                genres: profile.genres || []
-            };
+                cover: '',
+                bio: '',
+                genres: []
+            }));
+            resolve();
         });
-        
-        console.log('Artists processed:', allArtists.length);
     });
 }
 
@@ -481,7 +485,7 @@ async function processAndUploadFile(file, uploadId) {
         
         // Reload songs
         await loadSongs();
-        processArtists();
+        await processArtists();
         
         setTimeout(() => {
             itemEl.remove();
@@ -684,7 +688,7 @@ async function handleEditSong(e) {
         closeEditSongModal();
         
         await loadSongs();
-        processArtists();
+        await processArtists();
         renderSongs();
         
     } catch (error) {
@@ -731,7 +735,7 @@ async function deleteSong(songId, title) {
         }
         
         await loadSongs();
-        processArtists();
+        await processArtists();
         renderSongs();
         renderAnalytics();
         
@@ -859,7 +863,7 @@ async function handleEditArtist(e) {
         
         closeEditArtistModal();
         
-        processArtists();
+        await processArtists();
         renderArtists();
         
     } catch (error) {
