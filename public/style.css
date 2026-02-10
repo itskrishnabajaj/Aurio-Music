@@ -2037,6 +2037,44 @@ button {
     animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Top-level modals (direct body children) - hidden by default, overlay when active */
+body > .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
+    width: auto;
+    box-shadow: none;
+    border: none;
+    animation: fadeIn 0.2s ease;
+}
+
+body > .modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body > .modal > .modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    max-width: 90%;
+    width: 400px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin-bottom: 0;
+}
+
 @keyframes modalSlideUp {
     from {
         opacity: 0;
@@ -2049,16 +2087,113 @@ button {
 }
 
 .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: var(--spacing-xl);
 }
 
-.modal-header h2 {
+.modal-header h2,
+.modal-header h3 {
     font-size: 22px;
     font-weight: 700;
 }
 
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
 .modal-content {
     margin-bottom: var(--spacing-xl);
+}
+
+/* Drawer (queue panel) */
+.drawer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.drawer.active {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.drawer-content {
+    background: var(--bg-secondary);
+    width: 85%;
+    max-width: 400px;
+    height: 100%;
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+    animation: slideInRight 0.3s ease;
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.drawer-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.drawer-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.drawer-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.queue-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.queue-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-md);
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }
 
 .modal-actions {
