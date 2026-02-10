@@ -254,7 +254,6 @@ function renderAnalytics() {
     document.getElementById('storageUsed').textContent = `${estimatedSize} MB`;
     
     renderTopSongs();
-    renderPendingApprovals();
     
     // Render enhanced analytics
     if (typeof renderGenreChart === 'function') {
@@ -288,35 +287,6 @@ function renderTopSongs() {
             <div class="top-song-plays">${(song.playCount || 0).toLocaleString()} plays</div>
         </div>
     `).join('');
-}
-
-function renderPendingApprovals() {
-    const pending = allUsers.filter(u => {
-        const status = u.status || (u.approved === true ? 'approved' : 'pending');
-        return status === 'pending';
-    });
-    
-    // If there's a pending approvals section, update it
-    const pendingContainer = document.getElementById('pendingApprovals');
-    if (pendingContainer) {
-        if (pending.length === 0) {
-            pendingContainer.innerHTML = '<p style="color: var(--text-secondary); padding: 20px; text-align: center;">No pending approvals</p>';
-        } else {
-            pendingContainer.innerHTML = `
-                <div class="pending-badge">${pending.length} pending approval${pending.length > 1 ? 's' : ''}</div>
-                ${pending.slice(0, 5).map(user => `
-                    <div class="pending-user-item">
-                        <div>
-                            <div class="pending-user-name">${escapeHtml(user.username)}</div>
-                            <div class="pending-user-email">${user.email || user.username + '@aurio.app'}</div>
-                        </div>
-                        <button class="btn-approve-small" onclick="approveUser('${user.id}')">Approve</button>
-                    </div>
-                `).join('')}
-                ${pending.length > 5 ? `<p style="text-align: center; color: var(--text-secondary); margin-top: 12px;">+${pending.length - 5} more</p>` : ''}
-            `;
-        }
-    }
 }
 
 // UPLOAD WITH AUTO-METADATA EXTRACTION
